@@ -2,6 +2,7 @@ import express from "express";
 import logger from "./utils/logger.js";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
+import healthRoutes from "./routes/health.routes.js";
 
 const app = express();
 
@@ -27,5 +28,7 @@ app.use(
     },
   })
 );
+
+app.use("/api/health", healthRoutes);
 
 export { app };
