@@ -42,7 +42,7 @@ app.use("/api/health", healthRouter);
 // spotify routes
 app.use("/api/spotify", spotifyRouter);
 
-app.use("/spotify/login", spotifyAuthRouter);
+app.use("/auth/spotify", spotifyAuthRouter);
 
 app.use(errorHandler);
 export { app };
