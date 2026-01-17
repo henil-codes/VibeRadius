@@ -1,6 +1,6 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 import { useState } from "react";
-import axios from "axios";
+import { searchTrack } from "../services/SpotifyService.js";
 
 export default function SpotifySearch() {
   const [query, setQuery] = useState("");
@@ -17,10 +17,10 @@ export default function SpotifySearch() {
     setHasSearched(true);
 
     try {
-      const res = await axios.get(
-        `${API_BASE_URL}/api/spotify/search?q=${encodeURIComponent(query)}`,
-      );
-      setTracks(res.data?.data?.tracks?.items || []);
+      
+      const items = await searchTrack(query);
+      setTracks(items || []);
+
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.message || "Error fetching tracks");
