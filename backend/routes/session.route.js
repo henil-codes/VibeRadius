@@ -1,4 +1,5 @@
 import { Router } from "express";
+
 import {
   createSession,
   deleteSession,
@@ -15,5 +16,6 @@ sessionRouter.get("/my", getMySession);
 sessionRouter.post("/join", joinSession);
 sessionRouter.delete("/:id/", isHost, deleteSession);
 sessionRouter.patch("/:id/status", isHost, sessionStatusChange);
+
 
 export default sessionRouter;

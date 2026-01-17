@@ -1,3 +1,4 @@
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 import { useState } from "react";
 import { searchTrack } from "../services/SpotifyService.js";
 
@@ -16,8 +17,10 @@ export default function SpotifySearch() {
     setHasSearched(true);
 
     try {
+      
       const items = await searchTrack(query);
       setTracks(items || []);
+
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.message || "Error fetching tracks");

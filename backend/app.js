@@ -4,10 +4,10 @@ import express from "express";
 import logger from "./utils/logger.js";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
-
-import healthRouter from "./routes/health.route.js";
-import spotifyRouter from "./routes/spotify.route.js";
-import spotifyAuthRouter from "./routes/spotifyAuth.route.js";
+import cors from "cors"
+import healthRoutes from "./routes/health.route.js";
+import spotifyRoutes from "./routes/spotify.route.js";
+import spotifyAuthRoutes from "./routes/spotifyAuth.route.js";
 import sessionRoutes from "./routes/session.route.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 
@@ -17,6 +17,16 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 app.use(cookieParser());
+app.use(
+  cors({
+     origin: "*",
+    // origin: [
+    //   "http://localhost:5173",
+    //   process.env.CLIENT_URL
+    // ],
+    credentials: true,
+  })
+);
 const morganFormat = ":method :url :status :response-time ms"; // Log method, URL, status, and response time
 app.use(
   morgan(morganFormat, {
@@ -38,12 +48,13 @@ app.use(
 
 // Routes
 // server health check
-app.use("/api/health", healthRouter);
+app.use("/api/health", healthRoutes);
 
 // spotify routes
-app.use("/api/spotify", spotifyRouter);
-app.use("/spotify/login", spotifyAuthRouter);
+app.use("/api/spotify", spotifyRoutes);
 app.use("/api/session", sessionRoutes);
+app.use("/auth/spotify", spotifyAuthRoutes);
+
 
 app.use(errorHandler);
 export { app };
