@@ -10,14 +10,14 @@ export default function AppRoutes() {
     return(
         <Routes>
 
-            {/* For Home */}
+            For Home
             <Route path='/' element={<SpotifySearch/>}></Route>
 
             {/* For Style Guide */}
             <Route path='/styleguide' element={<StyleGuide/>} />
 
             {/* For Admin Dashboard */}
-            <Route path='/admin/dashboard' element={<AdminDashboard/>} />
+            <Route path='/' element={<AdminDashboard/>} />
 
             {/* For Authentication */}
             <Route path='/login' element={<Login/>}></Route>
