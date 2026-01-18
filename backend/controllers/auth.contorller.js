@@ -3,6 +3,8 @@ import User from "../models/user.model.js";
 import {APIError} from "../utils/ApiError.js";
 import {APIResponse} from "../utils/ApiResponse.js";
 import { createUniqueUsername } from "../utils/createUniqueUsername.js";
+import { generateAccessRefreshToken } from "../utils/generateAccessRefreshToken.js";
+import logger from "../utils/logger.js";
 
 /**
  * REGISTER USER
@@ -14,7 +16,7 @@ import { createUniqueUsername } from "../utils/createUniqueUsername.js";
  * @param {Function} next - Express next middleware function
  */
 
-const registerUser = asyncHandler(async (req, res, next) => {
+const registerUser = asyncHandler(async (req, res) => {
 
   // get user email, and password from Form
   const { email, name, password } = req.body;
@@ -50,22 +52,37 @@ const registerUser = asyncHandler(async (req, res, next) => {
   // genrate a random username
   const username = await createUniqueUsername();
 
-  // create a new user
-  const newUser = new User.create({
+  logger.info("Register user request received", {
     email,
     username,
     name,
-    password,
+  });
+
+  // create a new user
+  const user = await User.create({
+    email: email,
+    username: username,
+    name: name,
+    password: password,
+  });
+
+  logger.info("User created successfully", {
+    userId: user._id,
   });
 
   // generate tokens
-  const { accessTokens, refreshTokens } = await newUser.generateAccessRefreshToken();
+  const { accessTokens, refreshTokens } = await generateAccessRefreshToken(user._id);
 
-  // save the user
-  await newUser.save();
+  logger.info("Tokens generated for user", {
+    userId: user._id,
+    accessTokens,
+    refreshTokens,
+  });
+
+  const createdUser = await User.findById(user._id).select("-password -refreshToken");
 
   // send response
-  options = {
+  const options = {
     httpOnly: true,
     secure: true,
   }
@@ -78,7 +95,7 @@ const registerUser = asyncHandler(async (req, res, next) => {
     new APIResponse(
       200,
       {
-        user: newUser, accessTokens, refreshTokens
+        user: createdUser, accessTokens, refreshTokens
       },
       "User registered successfully!"
     )
@@ -95,7 +112,7 @@ const registerUser = asyncHandler(async (req, res, next) => {
  * @param {Object} res - Express response object
  * @param {Function} next - Express next middleware function
 **/
-const loginUser = asyncHandler(async (req, res, next) => {
+const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   
   // check email and password field is not empty
@@ -115,7 +132,7 @@ const loginUser = asyncHandler(async (req, res, next) => {
   if (!isMatch) throw new APIError(401, "Invalid credentials!");
 
   // generate tokens
-  const { accessTokens, refreshTokens } = await user.generateAccessRefreshToken();
+  const { accessTokens, refreshTokens } = await generateAccessRefreshToken(user._id);
 
   // send response
   const options = {
@@ -131,7 +148,7 @@ const loginUser = asyncHandler(async (req, res, next) => {
       new APIResponse(
         200,
         {
-          user: user, accessTokens, refreshTokens
+          user: createdUser, accessTokens, refreshTokens
         },
         "User logged in successfully!"
       )
@@ -146,7 +163,7 @@ const loginUser = asyncHandler(async (req, res, next) => {
  * @param {Object} res - Express response object
  * @param {Function} next - Express next middleware function
 **/
-const logoutUser = asyncHandler(async (req, res, next) => {
+const logoutUser = asyncHandler(async (req, res) => {
   res
     .status(200)
     .clearCookie("accessToken")
