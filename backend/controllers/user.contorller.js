@@ -68,6 +68,9 @@ const registerUser = asyncHandler(async (req, res) => {
 
   logger.info("User created successfully", {
     userId: user._id,
+    email: user.email,
+    username: user.username,
+    name: user.name,
   });
 
   // generate tokens
@@ -177,4 +180,52 @@ const logoutUser = asyncHandler(async (req, res) => {
     );
 });
 
-export { registerUser, loginUser, logoutUser };
+// GET USER BY ID
+const getUserById = asyncHandler(async (req, res) => {
+  const userId = req.params.id;
+
+  const user = await User.findById(userId).select("-password -refreshToken");
+
+  if (!user) {
+    throw new APIError(404, "User not found");
+  }
+
+  return res
+    .status(200)
+    .json(new APIResponse(200, { user }, "User fetched successfully"));
+});
+
+// GET USER BY EMAIL
+const getUserByEmail = asyncHandler(async (req, res) => {
+  const email = req.params.email;
+
+  const user = await User.findOne({ email: email }).select("-password -refreshToken");
+
+  if (!user) {
+    throw new APIError(404, "User not found");
+  }
+
+  return res
+    .status(200)
+    .json(new APIResponse(200, { user }, "User fetched successfully"));
+});
+
+// DELETE USER BY ID
+const deleteUser = asyncHandler(async (req, res) => {
+  const userId = req.params.id;
+
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw new APIError(404, "User not found");
+  }
+
+  await user.deleteOne();
+
+  return res
+    .status(200)
+    .json(new APIResponse(200, null, "User deleted successfully"));
+});
+
+
+export { registerUser, loginUser, logoutUser, getUserById, getUserByEmail, deleteUser };

@@ -1,6 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import logger from "../utils/logger.js";
 
 const userSchema = new Schema(
   {
@@ -44,12 +45,12 @@ const userSchema = new Schema(
 // pre hook to hash password
 userSchema.pre("save", async function (next) {
   try {
-    if (!this.isModified("password")) return next();
+    if (!this.isModified("password")) return next;
     const saltRound = 10; // number of character in the password
     this.password = await bcrypt.hash(this.password, saltRound);
-    next();
+    next;
   } catch (error) {
-    next();
+    next(error);
   }
 });
 

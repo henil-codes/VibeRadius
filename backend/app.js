@@ -5,7 +5,7 @@ import logger from "./utils/logger.js";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import cors from "cors"
-import authRouter from "./routes/auth.route.js";
+import authRouter from "./routes/user.route.js";
 import healthRoutes from "./routes/health.route.js";
 import spotifyRoutes from "./routes/spotify.route.js";
 import spotifyAuthRoutes from "./routes/spotifyAuth.route.js";
