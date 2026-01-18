@@ -7,7 +7,7 @@ import { NavbarAdmin } from "../../components/admin/NavbarAdmin";
 import { FaSpotify, FaMusic, FaQrcode } from "react-icons/fa";
 import { MdQueueMusic } from "react-icons/md";
 import Button from "../../components/ui/Button";
-import ".adminDashboard.css";
+import "./adminDashboard.css";
 
 export const AdminDashboard = () => {
   // Fixed dot positions to prevent re-randomization on render
