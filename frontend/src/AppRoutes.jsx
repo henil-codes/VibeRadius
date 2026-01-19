@@ -10,6 +10,7 @@ export default function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />}></Route>
+      <Route path="/search" element={<SpotifySearch />}></Route>
 
       {/* For Style Guide */}
       <Route path="/styleguide" element={<StyleGuide />} />
