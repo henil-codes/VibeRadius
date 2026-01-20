@@ -1,4 +1,4 @@
-import { registerUser, loginUser, logoutUser, getUserById, getCurrentUser,getUserByEmail, deleteUser } from "../controllers/user.contorller.js";
+import { registerUser, loginUser, logoutUser, getUserById, getCurrentUser, getUserByEmail, deleteUser, refreshAccessToken } from "../controllers/user.contorller.js";
 import { Router } from "express";
 import { isLoggedIn } from "../middlewares/auth.middleware.js";
 
@@ -8,7 +8,8 @@ authRouter.post("/register", registerUser);
 authRouter.post("/login", loginUser);
 authRouter.post("/logout", logoutUser);
 
-authRouter.get("/verify-token",isLoggedIn,getCurrentUser)
+authRouter.get("/verify-token", isLoggedIn, getCurrentUser)
+authRouter.get("/refresh-token", refreshAccessToken);
 
 authRouter.get("/email/:email", getUserByEmail);
 

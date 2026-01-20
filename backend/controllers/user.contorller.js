@@ -6,16 +6,7 @@ import { createUniqueUsername } from "../utils/createUniqueUsername.js";
 import { generateAccessRefreshToken } from "../utils/generateAccessRefreshToken.js";
 import logger from "../utils/logger.js";
 
-/**
- * REGISTER USER
- * Handles user registration by hashing the password, creating a new user,
- * and saving it to the database. Returns the saved user as JSON.
- *
- * @param {Object} req - Express request object, expects user data in req.body
- * @param {Object} res - Express response object
- * @param {Function} next - Express next middleware function
- */
-
+// --- REGISTER USER ---
 const registerUser = asyncHandler(async (req, res) => {
   // get user email, and password from Form
   const { email, name, password } = req.body;
@@ -98,15 +89,23 @@ const registerUser = asyncHandler(async (req, res) => {
   );
 
   // send response
-  const options = {
+  const accessOptions = {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  };
+
+  const refreshOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    path: "/api/auth/refresh-token",
   };
 
   res
     .status(201)
-    .cookie("accessToken", accessTokens, options)
-    .cookie("refreshToken", refreshTokens, options)
+    .cookie("accessToken", accessTokens, accessOptions)
+    .cookie("refreshToken", refreshTokens, refreshOptions)
     .json(
       new APIResponse(
         200,
@@ -120,15 +119,7 @@ const registerUser = asyncHandler(async (req, res) => {
     );
 });
 
-/**
- * LOGIN USER
- * Handles user login by verifying credentials and generating access and refresh tokens.
- * Sets the tokens as HTTP-only cookies and returns user data along with tokens as JSON.
- *
- * @param {Object} req - Express request object, expects email and password in req.body
- * @param {Object} res - Express response object
- * @param {Function} next - Express next middleware function
- **/
+// --- LOGIN USER ---
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
@@ -158,18 +149,24 @@ const loginUser = asyncHandler(async (req, res) => {
   );
 
   // send response
- const options = {
+ const accessOptions = {
   httpOnly: true, // prevents JS access
   secure: process.env.NODE_ENV === "production", // only secure on production
   sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // cross-site for production
-  maxAge: 1000 * 60 * 60 * 24, // 1 day
+};
+
+const refreshOptions = {
+  httpOnly: true, // prevents JS access
+  secure: process.env.NODE_ENV === "production", // only secure on production
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // cross-site for production
+  path: "/api/auth/refresh-token",
 };
 
 
   res
     .status(200)
-    .cookie("accessToken", accessTokens, options)
-    .cookie("refreshToken", refreshTokens, options)
+    .cookie("accessToken", accessTokens, accessOptions)
+    .cookie("refreshToken", refreshTokens, refreshOptions)
     .json(
       new APIResponse(
         200,
@@ -183,23 +180,16 @@ const loginUser = asyncHandler(async (req, res) => {
     );
 });
 
-/** * LOGOUT USER
- * Handles user logout by clearing the access and refresh token cookies.
- * Returns a success message as JSON.
- *
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- * @param {Function} next - Express next middleware function
- **/
+// --- LOGOUT USER ---
 const logoutUser = asyncHandler(async (req, res) => {
   res
     .status(200)
-    .clearCookie("accessToken")
-    .clearCookie("refreshToken")
+    .clearCookie("accessToken", accessOptions)
+    .clearCookie("refreshToken", refreshOptions)
     .json(new APIResponse(200, null, "User logged out successfully!"));
 });
 
-// GET USER BY ID
+// --- GET USER BY ID ---
 const getUserById = asyncHandler(async (req, res) => {
   const userId = req.params.id;
 
@@ -214,7 +204,7 @@ const getUserById = asyncHandler(async (req, res) => {
     .json(new APIResponse(200, { user }, "User fetched successfully"));
 });
 
-// GET USER BY EMAIL
+// --- GET USER BY EMAIL ---
 const getUserByEmail = asyncHandler(async (req, res) => {
   const email = req.params.email;
 
@@ -231,7 +221,7 @@ const getUserByEmail = asyncHandler(async (req, res) => {
     .json(new APIResponse(200, { user }, "User fetched successfully"));
 });
 
-// DELETE USER BY ID
+// --- DELETE USER BY ID ---
 const deleteUser = asyncHandler(async (req, res) => {
   const userId = req.params.id;
 
@@ -248,13 +238,66 @@ const deleteUser = asyncHandler(async (req, res) => {
     .json(new APIResponse(200, null, "User deleted successfully"));
 });
 
+// --- GET CURRENT USER ---
 const getCurrentUser = asyncHandler(async (req, res) => {
-  const user = req.user; // <-- get from middleware
-  if (!user) throw new APIError(401, "User not found");
+  const accessTokens = req.cookies?.accessToken;
+
+  if (!accessTokens) {
+    throw new APIError(401, "Access Token missing.");
+  }
+  
+  let decoded;
+  try {
+    decoded = jwt.verify(accessTokens, process.env.JWT_SECRET);
+  } catch (error) {
+    throw new APIError(401, "Invalid or expired access token.");
+  }
+  
+  const user = await User.findById(decoded._id).select(
+    "-password -refreshToken"
+  );
 
   return res
     .status(200)
-    .json(new APIResponse(200, { user }, "User fetched successfully"));
+    .json(new APIResponse(200, { user, accessTokens }, "User fetched successfully"));
+});
+
+// --- REFRESH ACCESS TOKEN ---
+const refreshAccessToken = asyncHandler(async (req, res) => {
+  const refreshToken = req.cookies.refreshToken;
+
+  if (!refreshToken) {
+    return res
+      .status(401)
+      .json(new APIResponse(401, null, "Refresh token is required"));
+  }
+
+  try {
+    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+
+    const user = await User.findById(decoded._id);
+    if (!user || user.refreshToken !== refreshToken) {
+      return res
+        .status(401)
+        .json(new APIResponse(401, null, "Invalid refresh token"));
+    }
+
+    const newAccessToken = jwt.sign(
+      { _id: user._id, role: user.role },
+      process.env.ACCESS_TOKEN_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    return res
+      .status(200)
+      .json(
+        new APIResponse(200, { accessToken: newAccessToken }, "Token refreshed")
+      );
+  } catch (error) {
+    return res
+      .status(403)
+      .json(new APIResponse(403, null, "Invalid or expired refresh token"));
+  }
 });
 
 export {
@@ -265,4 +308,5 @@ export {
   getUserByEmail,
   deleteUser,
   getCurrentUser,
-};
+  refreshAccessToken
+}

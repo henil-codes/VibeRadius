@@ -19,8 +19,8 @@ const useAuthStore = create((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       const response = await authService.register(userData);
-      const { user } = response.data.data;
-      set({ user, isAuthenticated: true, isLoading: false });
+      const { user, accessTokens } = response.data.data;
+      set({ user, accessTokens, isAuthenticated: true, isLoading: false });
       return { success: true };
     } catch (error) {
       const message = error.response?.data?.message || "Registration failed";
@@ -34,8 +34,8 @@ const useAuthStore = create((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       const response = await authService.login(credentials);
-      const { user } = response.data.data;
-      set({ user, isAuthenticated: true, isLoading: false, error: null });
+      const { user, accessTokens } = response.data.data;
+      set({ user, accessTokens, isAuthenticated: true, isLoading: false, error: null });
       return { success: true };
     } catch (error) {
       const message = error.response?.data?.message || "Login failed";
@@ -64,25 +64,43 @@ const useAuthStore = create((set, get) => ({
       set({ isInitializing: true, isLoading: true, error: null });
       // Call backend to get current user via cookies
       const response = await authService.verifyToken(); // or getCurrentUser()
-      const { user } = response.data.data;
+      const { user, accessTokens } = response.data.data;
 
       set({
         user,
+        accessTokens,
         isAuthenticated: true,
         isLoading: false,
         isInitializing: false,
       });
-      return true;
+      return { success: true };
     } catch (err) {
       set({
         user: null,
+        accessTokens: "undefined",
         isAuthenticated: false,
         isLoading: false,
         isInitializing: false,
       });
-      return false;
+      return { success: false };
     }
   },
+
+  // Refresh Token
+  refreshToken: async () => {
+    try {
+      set({ isLoading: true, error: null });
+      const response = await authService.refreshToken();
+      const { accessToken } = response.data.data;
+      set({ accessTokens: accessToken, isLoading: false });
+      return { success: true };
+    } catch (error) {
+      const message = error.response?.data?.message || "Token refresh failed";
+      set({ error: message, isLoading: false });
+      return { success: false, error: message };
+    }
+  },
+
   // Update user locally
   updateUser: (userData) =>
     set((state) => ({ user: { ...state.user, ...userData } })),

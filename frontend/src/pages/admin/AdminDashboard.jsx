@@ -9,8 +9,22 @@ import { FaSpotify, FaMusic, FaQrcode } from "react-icons/fa";
 import { MdQueueMusic } from "react-icons/md";
 import Button from "../../components/ui/Button";
 import "./adminDashboard.css";
+import useAuthStore from '../../store/authStore.js';
 
 export const AdminDashboard = () => {
+
+  // verifying if admin is logged in
+  const { isAuthenticated, verifyToken } = useAuthStore();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      await verifyToken();
+    };
+    checkAuth();
+  }, [verifyToken]);
+
+  // Spotify Connection State
+
   const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
@@ -174,7 +188,7 @@ export const AdminDashboard = () => {
 
               {/* Description */}
               <p className="mt-3 text-text-primary/70 text-sm leading-relaxed">
-                {isConnected 
+                {isConnected
                   ? "Your Spotify account is linked. Ready to start a session!"
                   : "Link your Spotify account to start accepting song requests from customers"
                 }
