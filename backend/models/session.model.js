@@ -19,22 +19,19 @@ const sessionSchema = new Schema(
     },
     participants: [
       {
-        user_id: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-        joined_at: {
-          type: Date,
-          default: Date.now,
-        },
-        status: {
-          type: String,
-          enum: ["active", "inactive", "left", "kicked"],
-          default: "active",
-        },
+        type: Schema.Types.ObjectId,
+        ref: "User",
       },
     ],
     session_status: {
       type: String,
       enum: ["active", "inactive", "halt"],
       default: "inactive",
+    },
+    current_track_id: {
+      type: Schema.Types.ObjectId,
+      ref: "Queue",
+      default: null,
     },
   },
   {
