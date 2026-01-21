@@ -14,22 +14,21 @@ import logger from "../utils/logger.js";
 const BASE_COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
-  sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
   path: "/",
 };
 
 const ACCESS_TOKEN_COOKIE_OPTIONS = {
   ...BASE_COOKIE_OPTIONS,
-  maxAge: 15 * 60 * 1000,
+  maxAge: 15 * 60 * 1000,  // 15 MINUTES (you changed this from 15 * 1000)
 };
 
 const REFRESH_TOKEN_COOKIE_OPTIONS = {
   ...BASE_COOKIE_OPTIONS,
-  maxAge: 7 * 24 * 60 * 60 * 1000,
+  maxAge: 7 * 24 * 60 * 60 * 1000,  // 7 DAYS
 };
 
 // Register User
-
 const registerUser = asyncHandler(async (req, res) => {
   const { email, name, password } = req.body;
   if (!email || !name || !password) throw new APIError(400, "Fill all fields!");
@@ -62,7 +61,6 @@ const registerUser = asyncHandler(async (req, res) => {
 });
 
 // LOGIN USER
-
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password)
@@ -89,7 +87,6 @@ const loginUser = asyncHandler(async (req, res) => {
 });
 
 // LOGOUT
-
 const logoutUser = asyncHandler(async (req, res) => {
   if (req.user?._id) {
     await User.findByIdAndUpdate(req.user._id, { $unset: { refreshToken: 1 } });
@@ -103,7 +100,6 @@ const logoutUser = asyncHandler(async (req, res) => {
 });
 
 // REFRESH ACCESS TOKEN
-
 const refreshAccessToken = asyncHandler(async (req, res) => {
   const refreshToken = req.cookies.refreshToken;
 
@@ -148,7 +144,6 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 });
 
 //HELPERS
-
 const getUserById = asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id).select(
     "-password -refreshToken"
