@@ -1,18 +1,28 @@
-import { registerUser, loginUser, logoutUser, getUserById, getCurrentUser,getUserByEmail, deleteUser } from "../controllers/user.contorller.js";
 import { Router } from "express";
+import {
+  registerUser,
+  loginUser,
+  logoutUser,
+  refreshAccessToken,
+  getCurrentUser,
+  getUserById,
+  getUserByEmail,
+  deleteUser,
+} from "../controllers/user.contorller.js";
 import { isLoggedIn } from "../middlewares/auth.middleware.js";
 
 const authRouter = Router();
 
+// Public routes (NO authentication required)
 authRouter.post("/register", registerUser);
 authRouter.post("/login", loginUser);
-authRouter.post("/logout", logoutUser);
+authRouter.post("/refresh-token", refreshAccessToken);
 
-authRouter.get("/verify-token",isLoggedIn,getCurrentUser)
-
-authRouter.get("/email/:email", getUserByEmail);
-
-authRouter.get("/:id", getUserById);
-authRouter.delete("/:id", deleteUser);
+// Protected routes (authentication required)
+authRouter.post("/logout", isLoggedIn, logoutUser);
+authRouter.get("/verify-token", isLoggedIn, getCurrentUser);
+authRouter.get("/email/:email", isLoggedIn, getUserByEmail);
+authRouter.get("/:id", isLoggedIn, getUserById);
+// authRouter.delete("/:id", isLoggedIn, deleteUser);
 
 export default authRouter;

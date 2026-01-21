@@ -34,7 +34,7 @@ const useAuthStore = create((set, get) => ({
       return { success: true };
     } catch (error) {
       const message = error.response?.data?.message || "Registration failed";
-      set({ error: message, isLoading: false });
+      set({ error: message, isLoading: false, isAuthenticated: false });
       return { success: false, error: message };
     }
   },
@@ -60,7 +60,7 @@ const useAuthStore = create((set, get) => ({
     try {
       await authService.logout();
     } catch (err) {
-      console.error("Logout failed:", err);
+      console.warn("Server logout failed. Clearing client state anyway.");
     } finally {
       set({ user: null, isAuthenticated: false, error: null });
       localStorage.removeItem("accessToken");
@@ -86,7 +86,7 @@ const useAuthStore = create((set, get) => ({
         isLoading: false,
         isInitializing: false,
       });
-      return true;
+      return { success: true, user };
     } catch (err) {
       set({
         user: null,

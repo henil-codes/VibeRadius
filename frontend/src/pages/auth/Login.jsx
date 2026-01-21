@@ -149,10 +149,18 @@ const Login = () => {
             </button>
           </form>
 
-          <div className="mt-8 text-center">
-            <button onClick={() => navigate('/register')} className="text-sm text-[#5C4033]/60">
-              New venue? <span className="text-[#E07A3D] font-bold hover:underline">Register now</span>
-            </button>
+          {/* Register Link */}
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              Don't have an account?{' '}
+              <button
+                type="button"
+                onClick={() => navigate('/auth/register')}
+                className="text-[#E07A3D] hover:text-[#C4612A] font-medium"
+              >
+                Register here
+              </button>
+            </p>
           </div>
         </div>
       </div>
