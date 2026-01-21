@@ -1,5 +1,4 @@
 import apiClient from "../utils/apiClient.js";
-
 const authApiPrefix = "/api/auth";
 
 const authService = {
