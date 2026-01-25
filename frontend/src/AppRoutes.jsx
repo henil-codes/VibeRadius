@@ -10,6 +10,7 @@ import { HostProfile } from "./pages/admin/HostProfile.jsx";
 import useAuthStore from "./store/authStore.js";
 import CustomerView from "./pages/CustomerView.jsx";
 import SpotifyPlayer from "./pages/SpotifyPlayer.jsx"
+import TestSessionPage from "./pages/test_session.jsx";
 
 const ProtectedRoute = ({ children, allowGuest = false }) => {
   const { isAuthenticated, isInitializing, guest } = useAuthStore();
@@ -84,6 +85,11 @@ export default function AppRoutes() {
         path="/session-test"
         element={<TestSessionPage testSessionCode="URWOBR" />}
       /> */}
+
+      <Route
+        path="/session-test"
+        element={<TestSessionPage testSessionCode="URWOBR" />}
+      />
 
       <Route
         path="/admin/dashboard"
