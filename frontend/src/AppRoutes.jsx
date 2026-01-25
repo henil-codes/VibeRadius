@@ -87,6 +87,11 @@ export default function AppRoutes() {
       />
 
       <Route
+        path="/session-test"
+        element={<TestSessionPage testSessionCode="URWOBR" />}
+      />
+
+      <Route
         path="/admin/dashboard"
         element={
           <ProtectedRoute>
