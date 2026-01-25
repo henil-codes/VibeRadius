@@ -15,48 +15,63 @@ const SpotifyPlayer = (() => {
     const [position, setPosition] = useState(0);
 
     useEffect(() => {
-            const script = document.createElement("script");
-            script.src = "https://sdk.scdn.co/spotify-player.js";
-            script.async = true;
+        const script = document.createElement("script");
+        script.src = "https://sdk.scdn.co/spotify-player.js";
+        script.async = true;
 
-            document.body.appendChild(script);
+        document.body.appendChild(script);
 
-            window.onSpotifyWebPlaybackSDKReady = async () => {
-                const player = await new window.Spotify.Player({
-                    name: "VibeRadius Player",
-                    getOAuthToken: cb => { cb(token); },
-                    volume: 0.5
-                });
+        let playerInstance = null;
 
-                setPlayer(player);
+        window.onSpotifyWebPlaybackSDKReady = async () => {
+            playerInstance = new window.Spotify.Player({
+                name: "VibeRadius Player",
+                getOAuthToken: cb => { cb(token); },
+                volume: 0.5
+            });
 
-                player.addListener("ready", ({ device_id }) => {
-                    console.log("Ready with Device ID", device_id);
-                });
+            setPlayer(playerInstance);
 
-                player.addListener("not_ready", ({ device_id }) => {
-                    console.log("Device ID has gone offline", device_id);
-                });
+            playerInstance.addListener("ready", ({ device_id }) => {
+                console.log("Ready with Device ID", device_id);
+            });
 
-                player.addListener("initialization_error", ({ message }) => {
-                    console.error(message)
-                })
+            playerInstance.addListener("not_ready", ({ device_id }) => {
+                console.log("Device ID has gone offline", device_id);
+            });
 
-                player.addListener("authentication_error", ({ message }) => {
-                    console.error(message);
-                })
+            playerInstance.addListener("initialization_error", ({ message }) => {
+                console.error(message)
+            })
 
-                player.addListener("account_error", ({ message }) => {
-                    console.error(message);
-                })
+            playerInstance.addListener("authentication_error", ({ message }) => {
+                console.error(message);
+            })
 
-                player.connect();
+            playerInstance.addListener("account_error", ({ message }) => {
+                console.error(message);
+            })
+
+            playerInstance.connect();
+        }
+
+        return () => {
+            if (playerInstance) {
+                playerInstance.removeListener("ready");
+                playerInstance.removeListener("not_ready");
+                playerInstance.removeListener("initialization_error");
+                playerInstance.removeListener("authentication_error");
+                playerInstance.removeListener("account_error");
             }
-        }, []);
+            document.body.removeChild(script);
+            window.onSpotifyWebPlaybackSDKReady = null;
+        }
+    }, []);
+
     useEffect(() => {
         if (player === null) return;
 
-         const handleStateChange = (state) => {
+        const handleStateChange = (state) => {
             if (!state) {
                 return;
             }
