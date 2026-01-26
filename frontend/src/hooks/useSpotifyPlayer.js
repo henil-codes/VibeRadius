@@ -28,24 +28,15 @@ const useSpotifyPlayer = () => {
   const getToken = useCallback(async () => {
     try {
       const res = await authService.spotifyToken();
-      console.log("🔍 Token Response:", res.data);
-      console.log(
-        "🔍 Access Token (first 30 chars):",
-        res.data.access_token?.substring(0, 30)
-      );
-      console.log("🔍 Token expires at:", res.data.expires_at);
       tokenRef.current = res.data.access_token;
       return res.data.access_token;
     } catch (error) {
-      console.error("❌ Failed to get Spotify token:", error);
-      console.error("❌ Error response:", error.response?.data);
-      console.error("Failed to get Spotify token:", error);
+      
       setSpotifyConnected(false);
       return null;
     }
   }, [setSpotifyConnected]);
 
-  // Transfer playback function
   const transferPlayback = useCallback(
     async (device_id) => {
       try {
@@ -60,16 +51,24 @@ const useSpotifyPlayer = () => {
           },
           body: JSON.stringify({
             device_ids: [device_id],
-            play: false,
+            play: true, // Try setting this to true to force activation
           }),
         });
 
         if (response.ok) {
           console.log("✅ Playback transferred to VibeRadius");
-        } else if (response.status === 403) {
-          console.warn(
-            "⚠️ Missing scope: user-modify-playback-state. Please reconnect Spotify."
+        } else {
+          // Log the detailed error from Spotify
+          const errorData = await response.json().catch(() => ({}));
+          console.error(
+            "❌ Spotify Transfer Error:",
+            response.status,
+            errorData
           );
+
+          if (response.status === 403) {
+            console.warn("Check if the account is Spotify Premium.");
+          }
         }
       } catch (error) {
         console.error("Failed to transfer playback:", error);
@@ -80,11 +79,7 @@ const useSpotifyPlayer = () => {
 
   useEffect(() => {
     if (isInitializing || !isAuthenticated || !spotifyConnected) {
-      console.log("⏳ Waiting for auth...", {
-        isInitializing,
-        isAuthenticated,
-        spotifyConnected,
-      });
+     
       return;
     }
 

@@ -41,9 +41,11 @@ spotifyRouter.get(
   isLoggedIn,
   ensureSpotifyToken,
   asyncHandler(async (req, res) => {
+    const tokenDoc = await SpotifyToken.findOne({ userId: req.user._id });
     res.json({
       access_token: req.spotifyAccessToken,
       expires_at: req.spotifyTokenExpiry,
+      scope: tokenDoc?.scope,
       token_type: "Bearer",
     });
   })
