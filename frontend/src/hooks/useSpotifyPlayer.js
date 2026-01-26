@@ -46,34 +46,37 @@ const useSpotifyPlayer = () => {
   }, [setSpotifyConnected]);
 
   // Transfer playback function
-  const transferPlayback = useCallback(async (device_id) => {
-    try {
-      const token = tokenRef.current;
-      if (!token) return;
+  const transferPlayback = useCallback(
+    async (device_id) => {
+      try {
+        const token = await getToken();
+        if (!token) return;
 
-      const response = await fetch("https://api.spotify.com/v1/me/player", {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          device_ids: [device_id],
-          play: false,
-        }),
-      });
+        const response = await fetch("https://api.spotify.com/v1/me/player", {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            device_ids: [device_id],
+            play: false,
+          }),
+        });
 
-      if (response.ok) {
-        console.log("✅ Playback transferred to VibeRadius");
-      } else if (response.status === 403) {
-        console.warn(
-          "⚠️ Missing scope: user-modify-playback-state. Please reconnect Spotify."
-        );
+        if (response.ok) {
+          console.log("✅ Playback transferred to VibeRadius");
+        } else if (response.status === 403) {
+          console.warn(
+            "⚠️ Missing scope: user-modify-playback-state. Please reconnect Spotify."
+          );
+        }
+      } catch (error) {
+        console.error("Failed to transfer playback:", error);
       }
-    } catch (error) {
-      console.error("Failed to transfer playback:", error);
-    }
-  }, []);
+    },
+    [getToken]
+  );
 
   useEffect(() => {
     if (isInitializing || !isAuthenticated || !spotifyConnected) {
