@@ -3,8 +3,6 @@ import { authService } from "../services/authService.js";
 import useSessionStore from "./sessionStore.js";
 import { disconnectAllSockets } from "../utils/socketManager.js";
 
-// const hasCookie = () => document.cookie.includes("refreshToken");
-
 const useAuthStore = create((set, get) => ({
   user: null,
   isAuthenticated: false,
