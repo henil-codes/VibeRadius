@@ -9,11 +9,8 @@ import SessionPage from "./pages/SessionPage.jsx";
 import { HostProfile } from "./pages/admin/HostProfile.jsx";
 import useAuthStore from "./store/authStore.js";
 import CustomerView from "./pages/CustomerView.jsx";
-<<<<<<< HEAD
 import SpotifyPlayer from "./pages/SpotifyPlayer.jsx"
-=======
 import TestSessionPage from "./pages/test_session.jsx";
->>>>>>> 61123a1 (FIXED THE USER AUTH ERROR IN SOCKES CONNETION)
 
 const ProtectedRoute = ({ children, allowGuest = false }) => {
   const { isAuthenticated, isInitializing, guest } = useAuthStore();
@@ -84,10 +81,10 @@ export default function AppRoutes() {
       <Route path="/auth/login" element={<Login />} />
       <Route path="/auth/register" element={<Register />} />
 
-      {/* <Route
+      <Route
         path="/session-test"
         element={<TestSessionPage testSessionCode="URWOBR" />}
-      /> */}
+      />
 
       <Route
         path="/admin/dashboard"
