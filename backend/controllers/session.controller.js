@@ -92,7 +92,7 @@ const sessionStatusChange = asyncHandler(async (req, res) => {
   const { sessionId } = req.params;
   const { session_status } = req.body;
 
-  const session = await Session.findById( sessionId );
+  const session = await Session.findById(sessionId);
 
   if (session.host_id.toString() !== hostId.toString())
     throw new APIError(403, "Only the host can change session status");
@@ -164,6 +164,7 @@ const getDashboardData = asyncHandler(async (req, res) => {
     {
       $project: {
         id: "$_id",
+        code: "$session_code",
         name: "$session_name",
         status: "$session_status",
         songs: { $ifNull: [{ $arrayElemAt: ["$queueStats.count", 0] }, 0] },
@@ -208,6 +209,7 @@ const getDashboardData = asyncHandler(async (req, res) => {
     {
       $project: {
         id: "$_id",
+        code: "$session_code",
         name: "$session_name",
         date: "$updatedAt",
         totalSongs: {

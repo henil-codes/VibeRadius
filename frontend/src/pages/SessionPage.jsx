@@ -20,6 +20,9 @@ import {
 } from "react-icons/fa";
 import { NavbarAdmin } from "../components/admin/NavbarAdmin";
 import useSpotifyPlayer from "../hooks/useSpotifyPlayer";
+import useLiveSessionStore from "../store/liveSessionStore";
+
+// const {} = useLiveSessionStore();
 
 // --- Toast Notification ---
 const Toast = ({ message, type, onClose }) => {
@@ -40,7 +43,11 @@ const Toast = ({ message, type, onClose }) => {
     >
       <div
         className={`w-2.5 h-2.5 rounded-full ${
-          type === "join" ? "bg-success" : type === "leave" ? "bg-error" : "bg-info"
+          type === "join"
+            ? "bg-success"
+            : type === "leave"
+              ? "bg-error"
+              : "bg-info"
         } animate-pulse`}
       />
       <span className="text-sm font-bold">{message}</span>
@@ -107,7 +114,9 @@ const QueueModal = ({ isOpen, onClose, queue }) => {
                 <FaMusic size={16} />
               </div>
               <div className="flex-1 min-w-0">
-                <h4 className="font-bold text-text-primary text-sm truncate">{song.title}</h4>
+                <h4 className="font-bold text-text-primary text-sm truncate">
+                  {song.title}
+                </h4>
                 <p className="text-[10px] text-text-muted font-black uppercase tracking-widest">
                   {song.artist}
                 </p>
@@ -135,7 +144,12 @@ export default function SessionPage() {
   const [isLocked, setIsLocked] = useState(false);
 
   const [fullQueue] = useState([
-    { title: "Blinding Lights", artist: "The Weeknd", table: "T-12", votes: 12 },
+    {
+      title: "Blinding Lights",
+      artist: "The Weeknd",
+      table: "T-12",
+      votes: 12,
+    },
     { title: "Espresso", artist: "Sabrina Carpenter", table: "T-05", votes: 8 },
     { title: "Heat Waves", artist: "Glass Animals", table: "B-02", votes: 5 },
     { title: "Cruel Summer", artist: "Taylor Swift", table: "T-09", votes: 4 },
@@ -155,10 +169,14 @@ export default function SessionPage() {
 
   const toggleLock = () => {
     setIsLocked(!isLocked);
-    addToast(isLocked ? "Queue Unlocked" : "Requests Paused", isLocked ? "join" : "leave");
+    addToast(
+      isLocked ? "Queue Unlocked" : "Requests Paused",
+      isLocked ? "join" : "leave"
+    );
   };
 
-  const { player, is_paused, is_active, current_track, position } = useSpotifyPlayer();
+  const { player, is_paused, is_active, current_track, position } =
+    useSpotifyPlayer();
 
   return (
     <div className="min-h-screen bg-surface-bg text-text-primary relative overflow-x-hidden">
@@ -170,7 +188,9 @@ export default function SessionPage() {
           <Toast
             key={t.id}
             {...t}
-            onClose={() => setToasts((prev) => prev.filter((item) => item.id !== t.id))}
+            onClose={() =>
+              setToasts((prev) => prev.filter((item) => item.id !== t.id))
+            }
           />
         ))}
       </div>
@@ -223,7 +243,11 @@ export default function SessionPage() {
         </div>
       </div>
 
-      <QueueModal isOpen={isQueueOpen} onClose={() => setIsQueueOpen(false)} queue={fullQueue} />
+      <QueueModal
+        isOpen={isQueueOpen}
+        onClose={() => setIsQueueOpen(false)}
+        queue={fullQueue}
+      />
 
       <main className="max-w-7xl mx-auto p-6 lg:p-10 pt-24 lg:pt-32">
         {/* DASHBOARD HEADER */}
@@ -237,9 +261,12 @@ export default function SessionPage() {
                 ID: #MB44
               </p>
             </div>
-            <h1 className="text-5xl font-black text-text-primary tracking-tighter">Morning Brew</h1>
+            <h1 className="text-5xl font-black text-text-primary tracking-tighter">
+              Morning Brew
+            </h1>
             <p className="text-text-secondary font-medium mt-1">
-              Main Lounge Station • <span className="text-primary">Admin View</span>
+              Main Lounge Station •{" "}
+              <span className="text-primary">Admin View</span>
             </p>
           </div>
 
@@ -255,7 +282,8 @@ export default function SessionPage() {
               onClick={() => setIsQueueOpen(true)}
               className="bg-primary hover:bg-primary-dark text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-3 shadow-xl shadow-primary/20 transition-all active:scale-95 group"
             >
-              <FaPlus className="group-hover:rotate-90 transition-transform" /> Add Song
+              <FaPlus className="group-hover:rotate-90 transition-transform" />{" "}
+              Add Song
             </button>
           </div>
         </header>
@@ -276,7 +304,9 @@ export default function SessionPage() {
                 <p className="text-text-muted text-[10px] uppercase font-black tracking-widest mb-1 text-center">
                   Listeners
                 </p>
-                <p className="text-4xl font-black text-accent text-center tracking-tighter">48</p>
+                <p className="text-4xl font-black text-accent text-center tracking-tighter">
+                  48
+                </p>
               </div>
             </div>
 
@@ -290,7 +320,9 @@ export default function SessionPage() {
                   <button
                     onClick={toggleLock}
                     className={`p-2.5 rounded-xl transition-all ${
-                      isLocked ? "bg-error text-white scale-110" : "bg-white/5 text-white/40 hover:text-white"
+                      isLocked
+                        ? "bg-error text-white scale-110"
+                        : "bg-white/5 text-white/40 hover:text-white"
                     }`}
                     title={isLocked ? "Unlock Requests" : "Lock Requests"}
                   >
@@ -303,7 +335,7 @@ export default function SessionPage() {
                   {current_track?.name ?? "Waiting for Spotify…"}
                 </h3>
                 <p className="text-white/50 text-lg mt-2 font-medium italic">
-                  {current_track?.artists?.map(a => a.name).join(", ") ?? "—"}
+                  {current_track?.artists?.map((a) => a.name).join(", ") ?? "—"}
                 </p>
 
                 <div className="mt-10 flex items-center gap-5">
@@ -333,7 +365,9 @@ export default function SessionPage() {
                     <p className="text-[10px] uppercase font-black text-white/30 tracking-widest">
                       Up Next
                     </p>
-                    <p className="text-sm font-bold text-primary-light truncate">Blinding Lights</p>
+                    <p className="text-sm font-bold text-primary-light truncate">
+                      Blinding Lights
+                    </p>
                   </div>
                   <button className="flex items-center gap-2 bg-primary/10 hover:bg-primary text-primary-light hover:text-white px-4 py-2 rounded-xl transition-all text-[10px] font-black uppercase tracking-widest border border-primary/20">
                     <FaRocket /> Boost
@@ -349,15 +383,21 @@ export default function SessionPage() {
             <div className="bg-surface rounded-[3rem] shadow-sm border border-primary-subtle overflow-hidden h-full flex flex-col">
               <div className="p-8 border-b border-primary-subtle flex justify-between items-center bg-surface-alt/10">
                 <div>
-                  <h2 className="text-2xl font-black text-text-primary tracking-tight">Upcoming Requests</h2>
+                  <h2 className="text-2xl font-black text-text-primary tracking-tight">
+                    Upcoming Requests
+                  </h2>
                   <p className="text-text-muted text-[10px] font-black uppercase tracking-[0.2em] mt-1">
                     Real-time Guest Voting
                   </p>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="hidden sm:flex flex-col text-right">
-                    <span className="text-[10px] font-black text-text-muted uppercase">Est. Wait</span>
-                    <span className="text-sm font-bold text-primary">12 Minutes</span>
+                    <span className="text-[10px] font-black text-text-muted uppercase">
+                      Est. Wait
+                    </span>
+                    <span className="text-sm font-bold text-primary">
+                      12 Minutes
+                    </span>
                   </div>
                   <button className="p-4 bg-surface-bg border border-primary-subtle rounded-2xl text-text-primary hover:text-primary transition-all shadow-sm">
                     <FaQrcode size={20} />
@@ -367,12 +407,17 @@ export default function SessionPage() {
 
               <div className="flex-1">
                 {fullQueue.slice(0, 5).map((song, i) => (
-                  <div key={i} className="flex items-center gap-6 p-6 hover:bg-surface-alt/40 border-b border-primary-subtle last:border-0 group transition-all">
+                  <div
+                    key={i}
+                    className="flex items-center gap-6 p-6 hover:bg-surface-alt/40 border-b border-primary-subtle last:border-0 group transition-all"
+                  >
                     <div className="flex flex-col items-center min-w-[50px] bg-surface-bg py-2 rounded-2xl border border-primary-subtle/30 group-hover:border-primary/20">
                       <button className="text-text-muted hover:text-success transition-all hover:scale-125">
                         <FaChevronUp size={16} />
                       </button>
-                      <span className="font-black text-lg text-text-primary my-1 tracking-tighter">{song.votes}</span>
+                      <span className="font-black text-lg text-text-primary my-1 tracking-tighter">
+                        {song.votes}
+                      </span>
                       <button className="text-text-muted hover:text-error transition-all hover:scale-125">
                         <FaChevronDown size={16} />
                       </button>
@@ -386,7 +431,9 @@ export default function SessionPage() {
                       <h4 className="font-bold text-text-primary text-xl truncate tracking-tight group-hover:translate-x-1 transition-transform">
                         {song.title}
                       </h4>
-                      <p className="text-sm text-text-secondary font-medium italic truncate">{song.artist}</p>
+                      <p className="text-sm text-text-secondary font-medium italic truncate">
+                        {song.artist}
+                      </p>
                     </div>
 
                     <div className="flex items-center gap-4">
@@ -414,7 +461,8 @@ export default function SessionPage() {
                   onClick={() => setIsQueueOpen(true)}
                   className="group text-primary font-black text-xs hover:text-primary-dark transition-all uppercase tracking-[0.2em] flex items-center gap-3 mx-auto"
                 >
-                  <FaListUl className="group-hover:rotate-12 transition-transform" /> Open Full Management Suite
+                  <FaListUl className="group-hover:rotate-12 transition-transform" />{" "}
+                  Open Full Management Suite
                 </button>
               </div>
             </div>

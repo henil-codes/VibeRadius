@@ -1,0 +1,75 @@
+import Queue from "../../models/queue.model.js";
+import Session from "../../models/session.model.js";
+
+class QueueService {
+  async getSessionQueue(sessionId) {
+    const queueItems = await QueueService.find({
+      session_id: sessionId,
+      status: "queued",
+    }).sort({ total_votes: -1, added_at: 1 });
+
+    return queueItems.map((track) => ({
+      _id: track._id,
+      title: track.title,
+      artist: track.artists.join(", "),
+      artists: track.artists,
+      albumImage: track.track_image,
+      table: track.added_by_name,
+      votes: track.total_votes,
+      trackId: track.track_id,
+      requestedBy: track.added_by,
+      requestedByName: track.added_by_name,
+      addedAt: track.createdAt,
+      status: track.status,
+    }));
+  }
+
+  async handleGetSessionData(sessionCode) {
+    try {
+      const session = await Session.findOne({
+        session_code: sessionCode.toUpperCase(),
+      }).populate("current-track_id");
+      const queue = await this.getSessionQueue(session._id);
+
+      let currentlyPlaying = null;
+      if (session.current_track_id) {
+        const currentTrack = await Queue.findById(session.current_track_id);
+        if (currentTrack) {
+          currentlyPlaying = {
+            _id: currentTrack._id,
+            trackId: currentTrack.track_id,
+            name: currentTrack.title,
+            artists: currentTrack.artists,
+            albumImage: currentTrack.track_image,
+            addedBy: currentTrack.added_by_name,
+          };
+        }
+      }
+      const data = {
+        session: {
+          id: session._id,
+          name: session.session_name,
+          code: session.session_code,
+          status: session.session_status,
+          hostId: session.host_id,
+          createdAt: session.createdAt,
+        },
+        stats: {
+          listeners: session.participants.length,
+          inQueue: queue.length,
+          estimatedWait: queue.length * 3,
+        },
+        currentlyPlaying,
+        queue,
+        upNext: queue.length > 0 ? queue[0] : null,
+      };
+
+      return { success: true, data };
+    } catch (err) {
+      logger.error(`Error in getSessionData: ${err.message}`);
+      return { success: false, message: err.message };
+    }
+  }
+}
+
+export default new QueueService();

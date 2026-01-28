@@ -24,15 +24,15 @@ const registerSessionNamespace = (io) => {
     let userName;
 
     if (socket.user?._id) {
-      // Logged-in user
       userId = socket.user._id.toString();
-      
-      // ✅ DEBUG: Log the entire user object to see what's available
-      logger.info(`Socket user object:`, JSON.stringify(socket.user));
-      
-      // ✅ Try different possible property names
-      userName = socket.user.name || socket.user.username || socket.user.displayName || socket.user.email || `User_${userId.slice(-6)}`;
-      
+
+      userName =
+        socket.user.name ||
+        socket.user.username ||
+        socket.user.displayName ||
+        socket.user.email ||
+        `User_${userId.slice(-6)}`;
+
       logger.info(`Resolved userName: "${userName}" for userId: "${userId}"`);
     } else {
       // Guest user
@@ -54,7 +54,7 @@ const registerSessionNamespace = (io) => {
         );
       } catch (err) {
         logger.error(`Join session error for user ${userId}: ${err.message}`);
-        if (callback && typeof callback === 'function') {
+        if (callback && typeof callback === "function") {
           callback({ success: false, message: err.message });
         }
       }
@@ -71,7 +71,20 @@ const registerSessionNamespace = (io) => {
         );
       } catch (err) {
         logger.error(`Leave session error for user ${userId}: ${err.message}`);
-        if (callback && typeof callback === 'function') {
+        if (callback && typeof callback === "function") {
+          callback({ success: false, message: err.message });
+        }
+      }
+    });
+
+    socket.on("get_session_data", async (DataTransfer, callback) => {
+      try {
+        await handleGetSessionData();
+      } catch (err) {
+        logger.error(
+          `Get session data error for user ${userId}: ${err.message}`
+        );
+        if (callback && typeof callback === "function") {
           callback({ success: false, message: err.message });
         }
       }
@@ -79,7 +92,7 @@ const registerSessionNamespace = (io) => {
 
     socket.on("disconnecting", async (reason) => {
       logger.info(`User ${userId} is disconnecting. Reason: ${reason}`);
-      
+
       if (socket.currentSessionId || socket.currentSessionCode) {
         try {
           await handleDisconnect(
@@ -89,14 +102,18 @@ const registerSessionNamespace = (io) => {
             socket.currentSessionCode
           );
         } catch (err) {
-          logger.error(`Disconnecting error for user ${userId}: ${err.message}`);
+          logger.error(
+            `Disconnecting error for user ${userId}: ${err.message}`
+          );
         }
       }
     });
 
     socket.on("disconnect", async (reason) => {
-      logger.info(`User ${userId} disconnected from /session. Reason: ${reason}`);
-      
+      logger.info(
+        `User ${userId} disconnected from /session. Reason: ${reason}`
+      );
+
       if (socket.currentSessionId || socket.currentSessionCode) {
         try {
           await handleDisconnect(
