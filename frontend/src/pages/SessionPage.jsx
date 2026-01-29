@@ -22,8 +22,6 @@ import { NavbarAdmin } from "../components/admin/NavbarAdmin";
 import useSpotifyPlayer from "../hooks/useSpotifyPlayer";
 import useLiveSessionStore from "../store/liveSessionStore";
 
-// const {} = useLiveSessionStore();
-
 // --- Toast Notification ---
 const Toast = ({ message, type, onClose }) => {
   React.useEffect(() => {

@@ -17,7 +17,6 @@ const useLiveSessionStore = create((set, get) => ({
 
   currentTrack: null,
   queue: [],
-  upNext: null,
   isPlaying: false,
 
   stats: {
@@ -26,14 +25,16 @@ const useLiveSessionStore = create((set, get) => ({
     estimatedWait: 0,
   },
 
+  upNext: null,
+
   setCurrentSession: (session) => {
     set({
       currentSession: session,
       sessionCode: session.session_code,
       participantCount: session.participants?.length || 0,
       participants: session.participants || [],
-      hostId: session.created_by,
-      sessionStatus: session.status || "active",
+      hostId: session.host_id || session.created_by,
+      sessionStatus: session.status || session.session_status || "active",
       stats: {
         listeners: session.participants?.length || 0,
         inQueue: 0,
@@ -47,6 +48,7 @@ const useLiveSessionStore = create((set, get) => ({
   setConnected: (isConnected) => set({ isConnected }),
 
   setJoining: (isJoining) => set({ isJoining }),
+
   setJoinError: (error) => set({ joinError: error }),
 
   setSessionData: (data) => {
@@ -64,14 +66,22 @@ const useLiveSessionStore = create((set, get) => ({
   },
 
   handleUserJoined: (data) => {
-    const { userId, participantCount } = data;
+    const { userId, name, participantCount } = data;
 
-    set((state) => ({
-      participantCount,
-      participants: state.participants.includes(userId)
+    set((state) => {
+      const newParticipants = state.participants.some((p) => p.id === userId)
         ? state.participants
-        : [...state.participants, userId],
-    }));
+        : [...state.participants, { id: userId, name }];
+
+      return {
+        participantCount,
+        participants: newParticipants,
+        stats: {
+          ...state.stats,
+          listeners: participantCount,
+        },
+      };
+    });
   },
 
   handleUserLeft: (data) => {
@@ -79,15 +89,41 @@ const useLiveSessionStore = create((set, get) => ({
 
     set((state) => ({
       participantCount,
-      participants: state.participants.filter((id) => id !== userId),
+      participants: state.participants.filter((p) =>
+        typeof p === "string" ? p !== userId : p.id !== userId
+      ),
+      stats: {
+        ...state.stats,
+        listeners: participantCount,
+      },
     }));
   },
 
-  updateSessionStatus: (status) => set({ sessionStatus: status }),
-  setIsPlaying: (isPlaying) => set({ isPlaying }),
+  updateParticipantCount: (count) =>
+    set((state) => ({
+      participantCount: count,
+      stats: {
+        ...state.stats,
+        listeners: count,
+      },
+    })),
 
-  updateParticipantCount: (count) => set({ participantCount: count }),
+  setCurrentTrack: (track) => set({ currentTrack: track }),
+
+  setQueue: (queue) =>
+    set({
+      queue,
+      upNext: queue[0] || null,
+      stats: {
+        ...get().stats,
+        inQueue: queue.length,
+        estimatedWait: queue.length * 3,
+      },
+    }),
+
   updateSessionStatus: (status) => set({ sessionStatus: status }),
+
+  setIsPlaying: (isPlaying) => set({ isPlaying }),
 
   reset: () =>
     set({
