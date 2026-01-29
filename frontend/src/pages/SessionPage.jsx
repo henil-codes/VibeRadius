@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   FaPlay,
   FaStepForward,
@@ -20,6 +21,9 @@ import {
 } from "react-icons/fa";
 import { NavbarAdmin } from "../components/admin/NavbarAdmin";
 import useSpotifyPlayer from "../hooks/useSpotifyPlayer";
+import useLiveSessionStore from "../store/liveSessionStore";
+import useAuthStore from "../store/authStore";
+import { useSessionSocket, useQueueActions } from "../socket/session.socket";
 
 // --- Toast Notification ---
 const Toast = ({ message, type, onClose }) => {
@@ -40,7 +44,11 @@ const Toast = ({ message, type, onClose }) => {
     >
       <div
         className={`w-2.5 h-2.5 rounded-full ${
-          type === "join" ? "bg-success" : type === "leave" ? "bg-error" : "bg-info"
+          type === "join"
+            ? "bg-success"
+            : type === "leave"
+              ? "bg-error"
+              : "bg-info"
         } animate-pulse`}
       />
       <span className="text-sm font-bold">{message}</span>
@@ -87,7 +95,7 @@ const QueueModal = ({ isOpen, onClose, queue }) => {
         <div className="overflow-y-auto p-4 flex-1 custom-scrollbar">
           {queue.map((song, i) => (
             <div
-              key={i}
+              key={song.id || i}
               className="flex items-center gap-4 p-4 hover:bg-surface-alt rounded-2xl transition-all mb-2 group border border-transparent hover:border-primary-subtle"
             >
               <div className="flex flex-col items-center min-w-[32px] bg-surface-bg py-1 rounded-lg">
@@ -96,7 +104,7 @@ const QueueModal = ({ isOpen, onClose, queue }) => {
                   size={10}
                 />
                 <span className="text-xs font-black text-text-primary py-0.5">
-                  {song.votes}
+                  {song.votes || 0}
                 </span>
                 <FaChevronDown
                   className="text-text-muted hover:text-error cursor-pointer transition-colors"
@@ -107,9 +115,11 @@ const QueueModal = ({ isOpen, onClose, queue }) => {
                 <FaMusic size={16} />
               </div>
               <div className="flex-1 min-w-0">
-                <h4 className="font-bold text-text-primary text-sm truncate">{song.title}</h4>
+                <h4 className="font-bold text-text-primary text-sm truncate">
+                  {song.title || song.name}
+                </h4>
                 <p className="text-[10px] text-text-muted font-black uppercase tracking-widest">
-                  {song.artist}
+                  {song.artist || song.artists?.[0]?.name}
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -117,7 +127,7 @@ const QueueModal = ({ isOpen, onClose, queue }) => {
                   <FaTrashAlt size={14} />
                 </button>
                 <span className="text-[10px] font-black text-primary uppercase bg-primary-subtle px-3 py-1.5 rounded-lg border border-primary/10">
-                  {song.table}
+                  {song.table || song.requestedBy || "—"}
                 </span>
               </div>
             </div>
@@ -128,25 +138,126 @@ const QueueModal = ({ isOpen, onClose, queue }) => {
   );
 };
 
+// --- Activity Drawer ---
+const ActivityDrawer = ({ isOpen, onClose, participants }) => {
+  return (
+    <div
+      className={`fixed top-0 right-0 h-full w-80 bg-surface/90 backdrop-blur-xl shadow-2xl z-[140] transform transition-transform duration-500 ease-in-out border-l border-primary-subtle ${
+        isOpen ? "translate-x-0" : "translate-x-full"
+      }`}
+    >
+      <div className="p-6 pt-28 flex flex-col h-full">
+        <div className="flex items-center justify-between mb-8">
+          <h3 className="text-xl font-black text-text-primary flex items-center gap-3">
+            <FaBell className="text-primary" size={18} /> Live Participants
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-primary-subtle rounded-full text-text-muted transition-all"
+          >
+            <FaTimes size={20} />
+          </button>
+        </div>
+        <div className="space-y-3 overflow-y-auto custom-scrollbar flex-1 pr-2">
+          {participants.map((participant) => (
+            <div
+              key={participant.id}
+              className="p-4 rounded-2xl bg-surface border border-primary-subtle/50 flex items-start gap-4 hover:shadow-md transition-shadow"
+            >
+              <div className="w-2.5 h-2.5 rounded-full mt-1.5 bg-success" />
+              <div>
+                <p className="text-sm font-bold text-text-primary leading-tight">
+                  {participant.name}
+                </p>
+                <p className="text-[10px] text-text-muted font-black mt-1 uppercase tracking-tighter">
+                  Active
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function SessionPage() {
+  const { sessionCode: urlSessionCode } = useParams();
+  const navigate = useNavigate();
+  
   const [isQueueOpen, setIsQueueOpen] = useState(false);
   const [isActivityOpen, setIsActivityOpen] = useState(false);
   const [toasts, setToasts] = useState([]);
   const [isLocked, setIsLocked] = useState(false);
 
-  const [fullQueue] = useState([
-    { title: "Blinding Lights", artist: "The Weeknd", table: "T-12", votes: 12 },
-    { title: "Espresso", artist: "Sabrina Carpenter", table: "T-05", votes: 8 },
-    { title: "Heat Waves", artist: "Glass Animals", table: "B-02", votes: 5 },
-    { title: "Cruel Summer", artist: "Taylor Swift", table: "T-09", votes: 4 },
-    { title: "Flowers", artist: "Miley Cyrus", table: "T-11", votes: 2 },
-  ]);
+  // Auth store
+  const { isAuthenticated, socketToken } = useAuthStore();
 
-  const activities = [
-    { id: 1, type: "join", user: "Guest_29", time: "12:01 PM" },
-    { id: 2, type: "leave", user: "Guest_14", time: "12:05 PM" },
-    { id: 3, type: "join", user: "Guest_03", time: "12:10 PM" },
-  ];
+  // Zustand store selectors
+  const {
+    currentSession,
+    sessionCode,
+    isConnected,
+    currentTrack,
+    queue,
+    stats,
+    upNext,
+    participants,
+    sessionStatus,
+    isPlaying,
+    setSessionCode,
+  } = useLiveSessionStore();
+
+  const { refreshSessionData } = useQueueActions();
+
+  // Initialize session code from URL on mount
+  useEffect(() => {
+    if (urlSessionCode && urlSessionCode !== sessionCode) {
+      console.log(`📍 Setting session code from URL: ${urlSessionCode}`);
+      setSessionCode(urlSessionCode);
+    } else if (!urlSessionCode) {
+      console.warn("⚠️ No session code in URL params");
+    }
+  }, [urlSessionCode]); // Only run when URL param changes
+
+  // Check authentication
+  useEffect(() => {
+    if (!isAuthenticated) {
+      console.warn("⚠️ User not authenticated");
+      // Uncomment if you want to enforce auth:
+      // navigate("/login");
+    }
+  }, [isAuthenticated, navigate]);
+
+  // Setup socket connection with event handlers - only when we have a session code
+  const socketEventHandlers = {
+    track_changed: (data) => {
+      console.log("🎵 Track changed:", data);
+      useLiveSessionStore.getState().setCurrentTrack(data.track);
+    },
+    queue_updated: (data) => {
+      console.log("📋 Queue updated:", data);
+      useLiveSessionStore.getState().setQueue(data.queue);
+    },
+    playback_state_changed: (data) => {
+      console.log("⏯️ Playback state changed:", data);
+      useLiveSessionStore.getState().setIsPlaying(data.isPlaying);
+    },
+  };
+
+  // Only connect socket when we actually have a session code
+  useSessionSocket(sessionCode || null, socketEventHandlers);
+
+  // Setup toast handler on window
+  useEffect(() => {
+    window.showToast = addToast;
+    return () => {
+      delete window.showToast;
+    };
+  }, []);
+
+  const { player, is_paused, is_active, current_track: spotifyTrack, position } =
+    useSpotifyPlayer();
 
   const addToast = (message, type) => {
     const id = Date.now();
@@ -155,10 +266,15 @@ export default function SessionPage() {
 
   const toggleLock = () => {
     setIsLocked(!isLocked);
-    addToast(isLocked ? "Queue Unlocked" : "Requests Paused", isLocked ? "join" : "leave");
+    addToast(
+      isLocked ? "Queue Unlocked" : "Requests Paused",
+      isLocked ? "join" : "leave"
+    );
   };
 
-  const { player, is_paused, is_active, current_track, position } = useSpotifyPlayer();
+  // Determine which track to display (prefer store data, fallback to Spotify)
+  const displayTrack = currentTrack || spotifyTrack;
+  const displayQueue = queue.length > 0 ? queue : [];
 
   return (
     <div className="min-h-screen bg-surface-bg text-text-primary relative overflow-x-hidden">
@@ -170,76 +286,55 @@ export default function SessionPage() {
           <Toast
             key={t.id}
             {...t}
-            onClose={() => setToasts((prev) => prev.filter((item) => item.id !== t.id))}
+            onClose={() =>
+              setToasts((prev) => prev.filter((item) => item.id !== t.id))
+            }
           />
         ))}
       </div>
 
       {/* ACTIVITY DRAWER */}
-      <div
-        className={`fixed top-0 right-0 h-full w-80 bg-surface/90 backdrop-blur-xl shadow-2xl z-[140] transform transition-transform duration-500 ease-in-out border-l border-primary-subtle ${
-          isActivityOpen ? "translate-x-0" : "translate-x-full"
-        }`}
-      >
-        <div className="p-6 pt-28 flex flex-col h-full">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="text-xl font-black text-text-primary flex items-center gap-3">
-              <FaBell className="text-primary" size={18} /> Live Activity
-            </h3>
-            <button
-              onClick={() => setIsActivityOpen(false)}
-              className="p-2 hover:bg-primary-subtle rounded-full text-text-muted transition-all"
-            >
-              <FaTimes size={20} />
-            </button>
-          </div>
-          <div className="space-y-3 overflow-y-auto custom-scrollbar flex-1 pr-2">
-            {activities.map((act) => (
-              <div
-                key={act.id}
-                className="p-4 rounded-2xl bg-surface border border-primary-subtle/50 flex items-start gap-4 hover:shadow-md transition-shadow"
-              >
-                <div
-                  className={`w-2.5 h-2.5 rounded-full mt-1.5 ${
-                    act.type === "join"
-                      ? "bg-success"
-                      : "bg-error shadow-[0_0_8px_rgba(201,59,59,0.4)]"
-                  }`}
-                />
-                <div>
-                  <p className="text-sm font-bold text-text-primary leading-tight">
-                    {act.user}{" "}
-                    <span className="font-medium text-text-secondary">
-                      {act.type === "join" ? "joined" : "left"}
-                    </span>
-                  </p>
-                  <p className="text-[10px] text-text-muted font-black mt-1 uppercase tracking-tighter">
-                    {act.time}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      <ActivityDrawer
+        isOpen={isActivityOpen}
+        onClose={() => setIsActivityOpen(false)}
+        participants={participants}
+      />
 
-      <QueueModal isOpen={isQueueOpen} onClose={() => setIsQueueOpen(false)} queue={fullQueue} />
+      <QueueModal
+        isOpen={isQueueOpen}
+        onClose={() => setIsQueueOpen(false)}
+        queue={displayQueue}
+      />
 
       <main className="max-w-7xl mx-auto p-6 lg:p-10 pt-24 lg:pt-32">
         {/* DASHBOARD HEADER */}
         <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <span className="flex items-center gap-1.5 text-success text-[10px] font-black uppercase tracking-[0.2em] bg-success-light px-3 py-1 rounded-full border border-success/10">
-                <FaCircle className="text-[6px] animate-pulse" /> Live Now
+              <span
+                className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-full border ${
+                  isConnected && sessionStatus === "active"
+                    ? "text-success bg-success-light border-success/10"
+                    : "text-text-muted bg-surface border-primary-subtle/20"
+                }`}
+              >
+                <FaCircle
+                  className={`text-[6px] ${isConnected ? "animate-pulse" : ""}`}
+                />{" "}
+                {isConnected && sessionStatus === "active"
+                  ? "Live Now"
+                  : "Connecting..."}
               </span>
               <p className="text-text-muted font-black text-[10px] uppercase tracking-widest">
-                ID: #MB44
+                ID: #{sessionCode || "—"}
               </p>
             </div>
-            <h1 className="text-5xl font-black text-text-primary tracking-tighter">Morning Brew</h1>
+            <h1 className="text-5xl font-black text-text-primary tracking-tighter">
+              {currentSession?.name || "Session"}
+            </h1>
             <p className="text-text-secondary font-medium mt-1">
-              Main Lounge Station • <span className="text-primary">Admin View</span>
+              {currentSession?.venue || "Main Lounge"} •{" "}
+              <span className="text-primary">Admin View</span>
             </p>
           </div>
 
@@ -249,13 +344,16 @@ export default function SessionPage() {
               className="relative p-4 bg-surface border border-primary-subtle text-text-primary rounded-2xl hover:bg-primary-subtle transition-all active:scale-90 shadow-sm"
             >
               <FaBell size={18} />
-              <span className="absolute top-3.5 right-3.5 w-2.5 h-2.5 bg-primary rounded-full border-2 border-surface animate-bounce" />
+              {participants.length > 0 && (
+                <span className="absolute top-3.5 right-3.5 w-2.5 h-2.5 bg-primary rounded-full border-2 border-surface animate-bounce" />
+              )}
             </button>
             <button
               onClick={() => setIsQueueOpen(true)}
               className="bg-primary hover:bg-primary-dark text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-3 shadow-xl shadow-primary/20 transition-all active:scale-95 group"
             >
-              <FaPlus className="group-hover:rotate-90 transition-transform" /> Add Song
+              <FaPlus className="group-hover:rotate-90 transition-transform" />{" "}
+              Add Song
             </button>
           </div>
         </header>
@@ -269,14 +367,16 @@ export default function SessionPage() {
                   In Queue
                 </p>
                 <p className="text-4xl font-black text-primary text-center tracking-tighter">
-                  {fullQueue.length}
+                  {stats.inQueue || displayQueue.length}
                 </p>
               </div>
               <div className="bg-surface p-6 rounded-[2.5rem] shadow-sm border border-primary-subtle">
                 <p className="text-text-muted text-[10px] uppercase font-black tracking-widest mb-1 text-center">
                   Listeners
                 </p>
-                <p className="text-4xl font-black text-accent text-center tracking-tighter">48</p>
+                <p className="text-4xl font-black text-accent text-center tracking-tighter">
+                  {stats.listeners || participants.length}
+                </p>
               </div>
             </div>
 
@@ -290,7 +390,9 @@ export default function SessionPage() {
                   <button
                     onClick={toggleLock}
                     className={`p-2.5 rounded-xl transition-all ${
-                      isLocked ? "bg-error text-white scale-110" : "bg-white/5 text-white/40 hover:text-white"
+                      isLocked
+                        ? "bg-error text-white scale-110"
+                        : "bg-white/5 text-white/40 hover:text-white"
                     }`}
                     title={isLocked ? "Unlock Requests" : "Lock Requests"}
                   >
@@ -298,17 +400,23 @@ export default function SessionPage() {
                   </button>
                 </div>
 
-                {/* FIXED TRACK INFO */}
                 <h3 className="text-4xl font-black mt-8 leading-none tracking-tighter group-hover:text-primary-light transition-colors">
-                  {current_track?.name ?? "Waiting for Spotify…"}
+                  {displayTrack?.name || "Waiting for playback..."}
                 </h3>
                 <p className="text-white/50 text-lg mt-2 font-medium italic">
-                  {current_track?.artists?.map(a => a.name).join(", ") ?? "—"}
+                  {displayTrack?.artists?.map((a) => a.name).join(", ") ||
+                    displayTrack?.artist ||
+                    "—"}
                 </p>
 
                 <div className="mt-10 flex items-center gap-5">
                   <button
                     disabled={!is_active}
+                    onClick={() => {
+                      if (is_paused && player) {
+                        player.togglePlay();
+                      }
+                    }}
                     className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all shadow-xl ${
                       is_active
                         ? "bg-white text-accent-dark hover:scale-105 active:scale-95"
@@ -318,13 +426,25 @@ export default function SessionPage() {
                     <FaPlay className="ml-1" size={20} />
                   </button>
                   <button
-                    onClick={() => addToast("Track Skipped", "info")}
+                    onClick={() => {
+                      if (player) {
+                        player.nextTrack();
+                        addToast("Track Skipped", "info");
+                      }
+                    }}
                     className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center hover:bg-white/20 transition-all border border-white/5"
                   >
                     <FaStepForward size={18} />
                   </button>
                   <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                    <div className="w-1/3 h-full bg-primary shadow-[0_0_20px_#E07A3D]" />
+                    <div
+                      className="h-full bg-primary shadow-[0_0_20px_#E07A3D] transition-all duration-300"
+                      style={{
+                        width: displayTrack?.duration_ms
+                          ? `${(position / displayTrack.duration_ms) * 100}%`
+                          : "33%",
+                      }}
+                    />
                   </div>
                 </div>
 
@@ -333,7 +453,9 @@ export default function SessionPage() {
                     <p className="text-[10px] uppercase font-black text-white/30 tracking-widest">
                       Up Next
                     </p>
-                    <p className="text-sm font-bold text-primary-light truncate">Blinding Lights</p>
+                    <p className="text-sm font-bold text-primary-light truncate">
+                      {upNext?.title || upNext?.name || displayQueue[0]?.title || "—"}
+                    </p>
                   </div>
                   <button className="flex items-center gap-2 bg-primary/10 hover:bg-primary text-primary-light hover:text-white px-4 py-2 rounded-xl transition-all text-[10px] font-black uppercase tracking-widest border border-primary/20">
                     <FaRocket /> Boost
@@ -349,15 +471,21 @@ export default function SessionPage() {
             <div className="bg-surface rounded-[3rem] shadow-sm border border-primary-subtle overflow-hidden h-full flex flex-col">
               <div className="p-8 border-b border-primary-subtle flex justify-between items-center bg-surface-alt/10">
                 <div>
-                  <h2 className="text-2xl font-black text-text-primary tracking-tight">Upcoming Requests</h2>
+                  <h2 className="text-2xl font-black text-text-primary tracking-tight">
+                    Upcoming Requests
+                  </h2>
                   <p className="text-text-muted text-[10px] font-black uppercase tracking-[0.2em] mt-1">
                     Real-time Guest Voting
                   </p>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="hidden sm:flex flex-col text-right">
-                    <span className="text-[10px] font-black text-text-muted uppercase">Est. Wait</span>
-                    <span className="text-sm font-bold text-primary">12 Minutes</span>
+                    <span className="text-[10px] font-black text-text-muted uppercase">
+                      Est. Wait
+                    </span>
+                    <span className="text-sm font-bold text-primary">
+                      {stats.estimatedWait || displayQueue.length * 3} Minutes
+                    </span>
                   </div>
                   <button className="p-4 bg-surface-bg border border-primary-subtle rounded-2xl text-text-primary hover:text-primary transition-all shadow-sm">
                     <FaQrcode size={20} />
@@ -366,13 +494,18 @@ export default function SessionPage() {
               </div>
 
               <div className="flex-1">
-                {fullQueue.slice(0, 5).map((song, i) => (
-                  <div key={i} className="flex items-center gap-6 p-6 hover:bg-surface-alt/40 border-b border-primary-subtle last:border-0 group transition-all">
+                {displayQueue.slice(0, 5).map((song, i) => (
+                  <div
+                    key={song.id || i}
+                    className="flex items-center gap-6 p-6 hover:bg-surface-alt/40 border-b border-primary-subtle last:border-0 group transition-all"
+                  >
                     <div className="flex flex-col items-center min-w-[50px] bg-surface-bg py-2 rounded-2xl border border-primary-subtle/30 group-hover:border-primary/20">
                       <button className="text-text-muted hover:text-success transition-all hover:scale-125">
                         <FaChevronUp size={16} />
                       </button>
-                      <span className="font-black text-lg text-text-primary my-1 tracking-tighter">{song.votes}</span>
+                      <span className="font-black text-lg text-text-primary my-1 tracking-tighter">
+                        {song.votes || 0}
+                      </span>
                       <button className="text-text-muted hover:text-error transition-all hover:scale-125">
                         <FaChevronDown size={16} />
                       </button>
@@ -384,9 +517,11 @@ export default function SessionPage() {
 
                     <div className="flex-1 min-w-0">
                       <h4 className="font-bold text-text-primary text-xl truncate tracking-tight group-hover:translate-x-1 transition-transform">
-                        {song.title}
+                        {song.title || song.name}
                       </h4>
-                      <p className="text-sm text-text-secondary font-medium italic truncate">{song.artist}</p>
+                      <p className="text-sm text-text-secondary font-medium italic truncate">
+                        {song.artist || song.artists?.[0]?.name}
+                      </p>
                     </div>
 
                     <div className="flex items-center gap-4">
@@ -401,12 +536,20 @@ export default function SessionPage() {
                           From Table
                         </span>
                         <p className="text-xs font-black text-primary uppercase bg-primary-subtle px-3 py-1.5 rounded-lg border border-primary/10">
-                          {song.table}
+                          {song.table || song.requestedBy || "—"}
                         </p>
                       </div>
                     </div>
                   </div>
                 ))}
+
+                {displayQueue.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-16 text-text-muted">
+                    <FaMusic size={48} className="mb-4 opacity-20" />
+                    <p className="font-bold">No songs in queue</p>
+                    <p className="text-sm mt-1">Add songs to get started!</p>
+                  </div>
+                )}
               </div>
 
               <div className="p-8 bg-surface-alt/30 text-center border-t border-primary-subtle">
@@ -414,7 +557,8 @@ export default function SessionPage() {
                   onClick={() => setIsQueueOpen(true)}
                   className="group text-primary font-black text-xs hover:text-primary-dark transition-all uppercase tracking-[0.2em] flex items-center gap-3 mx-auto"
                 >
-                  <FaListUl className="group-hover:rotate-12 transition-transform" /> Open Full Management Suite
+                  <FaListUl className="group-hover:rotate-12 transition-transform" />{" "}
+                  Open Full Management Suite
                 </button>
               </div>
             </div>
