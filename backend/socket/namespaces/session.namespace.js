@@ -7,6 +7,7 @@ import {
 import logger from "../../utils/logger.js";
 import { createUniqueUsername } from "../../utils/createUniqueUsername.js";
 import crypto from "crypto";
+import { handleGetSessionData } from "../../socket/handlers/queue.handler.js";
 
 const registerSessionNamespace = (io) => {
   const sessionNamespace = io.of("/session");
@@ -77,9 +78,15 @@ const registerSessionNamespace = (io) => {
       }
     });
 
-    socket.on("get_session_data", async (DataTransfer, callback) => {
+    socket.on("get_session_data", async (data, callback) => {
       try {
-        await handleGetSessionData();
+        await handleGetSessionData(
+          socket,
+          sessionNamespace,
+          userId,
+          data,
+          callback
+        );
       } catch (err) {
         logger.error(
           `Get session data error for user ${userId}: ${err.message}`
