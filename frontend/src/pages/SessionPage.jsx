@@ -20,6 +20,10 @@ import {
 } from "react-icons/fa";
 import { NavbarAdmin } from "../components/admin/NavbarAdmin";
 import useSpotifyPlayer from "../hooks/useSpotifyPlayer";
+import useSessionStore from "../store/sessionStore.js";
+import { useNavigate } from "react-router-dom";
+
+
 
 // --- Toast Notification ---
 const Toast = ({ message, type, onClose }) => {
@@ -39,14 +43,16 @@ const Toast = ({ message, type, onClose }) => {
       className={`flex items-center gap-3 px-4 py-3 rounded-2xl border shadow-xl animate-in slide-in-from-top duration-300 ${styles[type]}`}
     >
       <div
-        className={`w-2.5 h-2.5 rounded-full ${
-          type === "join" ? "bg-success" : type === "leave" ? "bg-error" : "bg-info"
-        } animate-pulse`}
+        className={`w-2.5 h-2.5 rounded-full ${type === "join" ? "bg-success" : type === "leave" ? "bg-error" : "bg-info"
+          } animate-pulse`}
       />
       <span className="text-sm font-bold">{message}</span>
     </div>
   );
 };
+
+
+
 
 // --- Full Queue Management Modal ---
 const QueueModal = ({ isOpen, onClose, queue }) => {
@@ -160,6 +166,27 @@ export default function SessionPage() {
 
   const { player, is_paused, is_active, current_track, position } = useSpotifyPlayer();
 
+  /* Set session code into store if not already set */
+  const { activeSessionCode, setActiveSessionCode } = useSessionStore();
+  const navigate = useNavigate();
+
+  const handleQRCodeSessionSetup = () => {
+    if (activeSessionCode) {
+      console.log("Active session code already set in store:", activeSessionCode);
+      return;
+    }
+    const pathParts = window.location.pathname.split("/");
+    const sessionCodeFromURL = pathParts[pathParts.length - 1];
+
+    if (!sessionCodeFromURL) {
+      console.error("No session code found in URL.");
+      return;
+    }
+    setActiveSessionCode(sessionCodeFromURL);
+    navigate("/generateqrcode")
+  }
+
+
   return (
     <div className="min-h-screen bg-surface-bg text-text-primary relative overflow-x-hidden">
       <NavbarAdmin />
@@ -177,9 +204,8 @@ export default function SessionPage() {
 
       {/* ACTIVITY DRAWER */}
       <div
-        className={`fixed top-0 right-0 h-full w-80 bg-surface/90 backdrop-blur-xl shadow-2xl z-[140] transform transition-transform duration-500 ease-in-out border-l border-primary-subtle ${
-          isActivityOpen ? "translate-x-0" : "translate-x-full"
-        }`}
+        className={`fixed top-0 right-0 h-full w-80 bg-surface/90 backdrop-blur-xl shadow-2xl z-[140] transform transition-transform duration-500 ease-in-out border-l border-primary-subtle ${isActivityOpen ? "translate-x-0" : "translate-x-full"
+          }`}
       >
         <div className="p-6 pt-28 flex flex-col h-full">
           <div className="flex items-center justify-between mb-8">
@@ -200,11 +226,10 @@ export default function SessionPage() {
                 className="p-4 rounded-2xl bg-surface border border-primary-subtle/50 flex items-start gap-4 hover:shadow-md transition-shadow"
               >
                 <div
-                  className={`w-2.5 h-2.5 rounded-full mt-1.5 ${
-                    act.type === "join"
-                      ? "bg-success"
-                      : "bg-error shadow-[0_0_8px_rgba(201,59,59,0.4)]"
-                  }`}
+                  className={`w-2.5 h-2.5 rounded-full mt-1.5 ${act.type === "join"
+                    ? "bg-success"
+                    : "bg-error shadow-[0_0_8px_rgba(201,59,59,0.4)]"
+                    }`}
                 />
                 <div>
                   <p className="text-sm font-bold text-text-primary leading-tight">
@@ -289,9 +314,8 @@ export default function SessionPage() {
                   </span>
                   <button
                     onClick={toggleLock}
-                    className={`p-2.5 rounded-xl transition-all ${
-                      isLocked ? "bg-error text-white scale-110" : "bg-white/5 text-white/40 hover:text-white"
-                    }`}
+                    className={`p-2.5 rounded-xl transition-all ${isLocked ? "bg-error text-white scale-110" : "bg-white/5 text-white/40 hover:text-white"
+                      }`}
                     title={isLocked ? "Unlock Requests" : "Lock Requests"}
                   >
                     {isLocked ? <FaLock size={14} /> : <FaUnlock size={14} />}
@@ -309,11 +333,10 @@ export default function SessionPage() {
                 <div className="mt-10 flex items-center gap-5">
                   <button
                     disabled={!is_active}
-                    className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all shadow-xl ${
-                      is_active
-                        ? "bg-white text-accent-dark hover:scale-105 active:scale-95"
-                        : "bg-white/20 text-white/40 cursor-not-allowed"
-                    }`}
+                    className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all shadow-xl ${is_active
+                      ? "bg-white text-accent-dark hover:scale-105 active:scale-95"
+                      : "bg-white/20 text-white/40 cursor-not-allowed"
+                      }`}
                   >
                     <FaPlay className="ml-1" size={20} />
                   </button>
@@ -359,8 +382,8 @@ export default function SessionPage() {
                     <span className="text-[10px] font-black text-text-muted uppercase">Est. Wait</span>
                     <span className="text-sm font-bold text-primary">12 Minutes</span>
                   </div>
-                  <button className="p-4 bg-surface-bg border border-primary-subtle rounded-2xl text-text-primary hover:text-primary transition-all shadow-sm">
-                    <FaQrcode size={20} />
+                  <button className="p-4 bg-surface-bg border border-primary-subtle rounded-2xl text-text-primary hover:text-primary transition-all shadow-sm" onClick={handleQRCodeSessionSetup}>
+                    <FaQrcode size={20} /> Generate QR Code
                   </button>
                 </div>
               </div>

@@ -33,6 +33,7 @@ export default function HomePage() {
 
   const {
     activeSessions,
+    setActiveSessionCode,
     pastSessions,
     isLoading,
     error,
@@ -118,6 +119,7 @@ export default function HomePage() {
                     </div>
                     <button className="bg-[#5C4033] hover:bg-[#3d2b22] text-white px-6 py-3 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ml-auto md:ml-0 shadow-lg shadow-[#5C4033]/10"
                       onClick={() => {
+                        setActiveSessionCode(session.code);
                         navigate(`/session/${session.code}`)
                       }}>
                       Tune into Vibe <FaChevronRight size={12} />
