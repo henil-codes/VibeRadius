@@ -184,7 +184,7 @@ const ActivityDrawer = ({ isOpen, onClose, participants }) => {
 export default function SessionPage() {
   const { sessionCode: urlSessionCode } = useParams();
   const navigate = useNavigate();
-  
+
   const [isQueueOpen, setIsQueueOpen] = useState(false);
   const [isActivityOpen, setIsActivityOpen] = useState(false);
   const [toasts, setToasts] = useState([]);
@@ -230,25 +230,30 @@ export default function SessionPage() {
   }, [isAuthenticated, navigate]);
 
   // Setup socket connection with event handlers - only when we have a session code
-  const socketEventHandlers = {
-    track_changed: (data) => {
-      console.log("🎵 Track changed:", data);
-      useLiveSessionStore.getState().setCurrentTrack(data.track);
-    },
-    queue_updated: (data) => {
-      console.log("📋 Queue updated:", data);
-      useLiveSessionStore.getState().setQueue(data.queue);
-    },
-    playback_state_changed: (data) => {
-      console.log("⏯️ Playback state changed:", data);
-      useLiveSessionStore.getState().setIsPlaying(data.isPlaying);
-    },
+  const socketEventHandlers = React.useMemo(
+    () => ({
+      track_changed: (data) => {
+        console.log("🎵 Track changed:", data);
+        useLiveSessionStore.getState().setCurrentTrack(data.track);
+      },
+      queue_updated: (data) => {
+        console.log("📋 Queue updated:", data);
+        useLiveSessionStore.getState().setQueue(data.queue);
+      },
+      playback_state_changed: (data) => {
+        console.log("⏯️ Playback state changed:", data);
+        useLiveSessionStore.getState().setIsPlaying(data.isPlaying);
+      },
+    }),
+    []
+  );
+
+  useSessionSocket(sessionCode || null, socketEventHandlers);
+  const addToast = (message, type) => {
+    const id = Date.now();
+    setToasts((prev) => [...prev, { id, message, type }]);
   };
 
-  // Only connect socket when we actually have a session code
-  useSessionSocket(sessionCode || null, socketEventHandlers);
-
-  // Setup toast handler on window
   useEffect(() => {
     window.showToast = addToast;
     return () => {
@@ -256,13 +261,7 @@ export default function SessionPage() {
     };
   }, []);
 
-  const { player, is_paused, is_active, current_track: spotifyTrack, position } =
-    useSpotifyPlayer();
-
-  const addToast = (message, type) => {
-    const id = Date.now();
-    setToasts((prev) => [...prev, { id, message, type }]);
-  };
+  const { player, is_paused, is_active, position } = useSpotifyPlayer();
 
   const toggleLock = () => {
     setIsLocked(!isLocked);
@@ -273,7 +272,7 @@ export default function SessionPage() {
   };
 
   // Determine which track to display (prefer store data, fallback to Spotify)
-  const displayTrack = currentTrack || spotifyTrack;
+  const displayTrack = currentTrack;
   const displayQueue = queue.length > 0 ? queue : [];
 
   return (
@@ -413,7 +412,7 @@ export default function SessionPage() {
                   <button
                     disabled={!is_active}
                     onClick={() => {
-                      if (is_paused && player) {
+                      if (player) {
                         player.togglePlay();
                       }
                     }}
@@ -440,9 +439,7 @@ export default function SessionPage() {
                     <div
                       className="h-full bg-primary shadow-[0_0_20px_#E07A3D] transition-all duration-300"
                       style={{
-                        width: displayTrack?.duration_ms
-                          ? `${(position / displayTrack.duration_ms) * 100}%`
-                          : "33%",
+                        width: `${position}%`,
                       }}
                     />
                   </div>
@@ -454,7 +451,10 @@ export default function SessionPage() {
                       Up Next
                     </p>
                     <p className="text-sm font-bold text-primary-light truncate">
-                      {upNext?.title || upNext?.name || displayQueue[0]?.title || "—"}
+                      {upNext?.title ||
+                        upNext?.name ||
+                        displayQueue[0]?.title ||
+                        "—"}
                     </p>
                   </div>
                   <button className="flex items-center gap-2 bg-primary/10 hover:bg-primary text-primary-light hover:text-white px-4 py-2 rounded-xl transition-all text-[10px] font-black uppercase tracking-widest border border-primary/20">
