@@ -21,8 +21,6 @@ import {
 } from "react-icons/fa";
 import { NavbarAdmin } from "../components/admin/NavbarAdmin";
 import useSpotifyPlayer from "../hooks/useSpotifyPlayer";
-import useSessionStore from "../store/sessionStore.js";
-import { useNavigate } from "react-router-dom";
 import useLiveSessionStore from "../store/liveSessionStore";
 import useAuthStore from "../store/authStore";
 import { useSessionSocket, useQueueActions } from "../socket/session.socket";
@@ -57,9 +55,6 @@ const Toast = ({ message, type, onClose }) => {
     </div>
   );
 };
-
-
-
 
 // --- Full Queue Management Modal ---
 const QueueModal = ({ isOpen, onClose, queue }) => {
@@ -281,27 +276,6 @@ export default function SessionPage() {
   const displayTrack = currentTrack || spotifyTrack;
   const displayQueue = queue.length > 0 ? queue : [];
 
-  /* Set session code into store if not already set */
-  const { activeSessionCode, setActiveSessionCode } = useSessionStore();
-  const navigate = useNavigate();
-
-  const handleQRCodeSessionSetup = () => {
-    if (activeSessionCode) {
-      console.log("Active session code already set in store:", activeSessionCode);
-      return;
-    }
-    const pathParts = window.location.pathname.split("/");
-    const sessionCodeFromURL = pathParts[pathParts.length - 1];
-
-    if (!sessionCodeFromURL) {
-      console.error("No session code found in URL.");
-      return;
-    }
-    setActiveSessionCode(sessionCodeFromURL);
-    navigate("/generateqrcode")
-  }
-
-
   return (
     <div className="min-h-screen bg-surface-bg text-text-primary relative overflow-x-hidden">
       <NavbarAdmin />
@@ -320,50 +294,11 @@ export default function SessionPage() {
       </div>
 
       {/* ACTIVITY DRAWER */}
-      <div
-        className={`fixed top-0 right-0 h-full w-80 bg-surface/90 backdrop-blur-xl shadow-2xl z-[140] transform transition-transform duration-500 ease-in-out border-l border-primary-subtle ${isActivityOpen ? "translate-x-0" : "translate-x-full"
-          }`}
-      >
-        <div className="p-6 pt-28 flex flex-col h-full">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="text-xl font-black text-text-primary flex items-center gap-3">
-              <FaBell className="text-primary" size={18} /> Live Activity
-            </h3>
-            <button
-              onClick={() => setIsActivityOpen(false)}
-              className="p-2 hover:bg-primary-subtle rounded-full text-text-muted transition-all"
-            >
-              <FaTimes size={20} />
-            </button>
-          </div>
-          <div className="space-y-3 overflow-y-auto custom-scrollbar flex-1 pr-2">
-            {activities.map((act) => (
-              <div
-                key={act.id}
-                className="p-4 rounded-2xl bg-surface border border-primary-subtle/50 flex items-start gap-4 hover:shadow-md transition-shadow"
-              >
-                <div
-                  className={`w-2.5 h-2.5 rounded-full mt-1.5 ${act.type === "join"
-                    ? "bg-success"
-                    : "bg-error shadow-[0_0_8px_rgba(201,59,59,0.4)]"
-                    }`}
-                />
-                <div>
-                  <p className="text-sm font-bold text-text-primary leading-tight">
-                    {act.user}{" "}
-                    <span className="font-medium text-text-secondary">
-                      {act.type === "join" ? "joined" : "left"}
-                    </span>
-                  </p>
-                  <p className="text-[10px] text-text-muted font-black mt-1 uppercase tracking-tighter">
-                    {act.time}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      <ActivityDrawer
+        isOpen={isActivityOpen}
+        onClose={() => setIsActivityOpen(false)}
+        participants={participants}
+      />
 
       <QueueModal
         isOpen={isQueueOpen}
@@ -552,8 +487,8 @@ export default function SessionPage() {
                       {stats.estimatedWait || displayQueue.length * 3} Minutes
                     </span>
                   </div>
-                  <button className="p-4 bg-surface-bg border border-primary-subtle rounded-2xl text-text-primary hover:text-primary transition-all shadow-sm" onClick={handleQRCodeSessionSetup}>
-                    <FaQrcode size={20} /> Generate QR Code
+                  <button className="p-4 bg-surface-bg border border-primary-subtle rounded-2xl text-text-primary hover:text-primary transition-all shadow-sm">
+                    <FaQrcode size={20} />
                   </button>
                 </div>
               </div>

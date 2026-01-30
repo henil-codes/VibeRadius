@@ -11,7 +11,6 @@ import useAuthStore from "./store/authStore.js";
 import CustomerView from "./pages/CustomerView.jsx";
 import SpotifyPlayer from "./pages/SpotifyPlayer.jsx"
 import TestSessionPage from "./pages/test_session.jsx";
-import QRCodeForSession from "./pages/QRCodeForSession.jsx";
 
 const ProtectedRoute = ({ children, allowGuest = false }) => {
   const { isAuthenticated, isInitializing, guest } = useAuthStore();
@@ -113,7 +112,6 @@ export default function AppRoutes() {
       <Route path="/search" element={<SpotifySearch />} />
       <Route path="/styleguide" element={<StyleGuide />} />
       <Route path="/spotifyplayer" element={<SpotifyPlayer />} />
-      <Route path="/generateqrcode" element={<QRCodeForSession />} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

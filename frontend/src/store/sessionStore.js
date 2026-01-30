@@ -3,7 +3,6 @@ import { sessionService } from "../services/sessionService.js";
 
 const useSessionStore = create((set) => ({
   activeSessions: [],
-  activeSessionCode: null,
   pastSessions: [],
   isLoading: false,
   error: null,
@@ -50,9 +49,6 @@ const useSessionStore = create((set) => ({
       })
     }
   },
-
-  /* Set the active session code */
-  setActiveSessionCode: (sessionCode) => set({ activeSessionCode: sessionCode }),
 
   /* Add a new active session */
   addActiveSession: (session) =>
