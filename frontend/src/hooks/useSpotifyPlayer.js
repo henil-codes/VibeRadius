@@ -1,16 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import useAuthStore from "../store/authStore";
+import useLiveSessionStore from "../store/liveSessionStore";
 import { authService } from "../services/authService";
 
 const useSpotifyPlayer = () => {
   const [player, setPlayer] = useState(null);
   const [is_paused, setPaused] = useState(false);
   const [is_active, setActive] = useState(false);
-  const [current_track, setTrack] = useState({
-    name: "Loading...",
-    artists: [{ name: "Loading..." }],
-    album: { images: [{ url: "" }] },
-  });
   const [position, setPosition] = useState(0);
   const [deviceId, setDeviceId] = useState(null);
 
@@ -21,17 +17,19 @@ const useSpotifyPlayer = () => {
     (state) => state.setSpotifyConnected
   );
 
+  const sessionTrack = useLiveSessionStore((state) => state.currentTrack);
+  const isPlaying = useLiveSessionStore((state) => state.isPlaying);
+
   const tokenRef = useRef(null);
   const scriptRef = useRef(null);
 
-  // Function to get fresh token
   const getToken = useCallback(async () => {
     try {
       const res = await authService.spotifyToken();
       tokenRef.current = res.data.access_token;
       return res.data.access_token;
     } catch (error) {
-      
+      console.error("Spotify token failed", error);
       setSpotifyConnected(false);
       return null;
     }
@@ -43,7 +41,7 @@ const useSpotifyPlayer = () => {
         const token = await getToken();
         if (!token) return;
 
-        const response = await fetch("https://api.spotify.com/v1/me/player", {
+        await fetch("https://api.spotify.com/v1/me/player", {
           method: "PUT",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -51,39 +49,21 @@ const useSpotifyPlayer = () => {
           },
           body: JSON.stringify({
             device_ids: [device_id],
-            play: true, // Try setting this to true to force activation
+            play: false,
           }),
         });
 
-        if (response.ok) {
-          console.log("✅ Playback transferred to VibeRadius");
-        } else {
-          // Log the detailed error from Spotify
-          const errorData = await response.json().catch(() => ({}));
-          console.error(
-            "❌ Spotify Transfer Error:",
-            response.status,
-            errorData
-          );
-
-          if (response.status === 403) {
-            console.warn("Check if the account is Spotify Premium.");
-          }
-        }
-      } catch (error) {
-        console.error("Failed to transfer playback:", error);
+        console.log("✅ Playback transferred");
+      } catch (err) {
+        console.error("Playback transfer failed", err);
       }
     },
     [getToken]
   );
 
   useEffect(() => {
-    if (isInitializing || !isAuthenticated || !spotifyConnected) {
-     
-      return;
-    }
+    if (isInitializing || !isAuthenticated || !spotifyConnected) return;
 
-    // Check if script already exists
     if (!scriptRef.current) {
       const script = document.createElement("script");
       script.src = "https://sdk.scdn.co/spotify-player.js";
@@ -95,73 +75,56 @@ const useSpotifyPlayer = () => {
     let playerInstance = null;
 
     window.onSpotifyWebPlaybackSDKReady = async () => {
-      try {
-        const token = await getToken();
-        if (!token) return;
+      const token = await getToken();
+      if (!token) return;
 
-        playerInstance = new window.Spotify.Player({
-          name: "VibeRadius Player",
-          getOAuthToken: async (cb) => {
-            const freshToken = await getToken();
-            if (freshToken) {
-              cb(freshToken);
-            }
-          },
-          volume: 0.5,
-        });
+      playerInstance = new window.Spotify.Player({
+        name: "VibeRadius Player",
+        getOAuthToken: async (cb) => {
+          const freshToken = await getToken();
+          if (freshToken) cb(freshToken);
+        },
+        volume: 0.5,
+      });
 
-        setPlayer(playerInstance);
+      setPlayer(playerInstance);
 
-        playerInstance.addListener("ready", ({ device_id }) => {
-          console.log("✅ Ready with Device ID", device_id);
-          setDeviceId(device_id);
-          transferPlayback(device_id);
-        });
+      playerInstance.addListener("ready", ({ device_id }) => {
+        console.log("✅ Player ready", device_id);
+        setDeviceId(device_id);
+        transferPlayback(device_id);
+      });
 
-        playerInstance.addListener("not_ready", ({ device_id }) => {
-          console.log("Device ID has gone offline", device_id);
-          setDeviceId(null);
-        });
+      playerInstance.addListener("not_ready", () => {
+        setDeviceId(null);
+      });
 
-        playerInstance.addListener("initialization_error", ({ message }) => {
-          console.error("❌ Initialization error:", message);
-        });
+      playerInstance.addListener("authentication_error", async () => {
+        const newToken = await getToken();
+        if (!newToken) setSpotifyConnected(false);
+      });
 
-        playerInstance.addListener(
-          "authentication_error",
-          async ({ message }) => {
-            console.error("❌ Authentication error:", message);
-            const newToken = await getToken();
-            if (!newToken) {
-              setSpotifyConnected(false);
-            }
-          }
-        );
+      playerInstance.addListener("account_error", () => {
+        setSpotifyConnected(false);
+      });
 
-        playerInstance.addListener("account_error", ({ message }) => {
-          console.error("❌ Account error:", message);
-          setSpotifyConnected(false);
-        });
-
-        const success = await playerInstance.connect();
-        if (success) {
-          console.log("🎵 Spotify Player connected successfully!");
+      playerInstance.addListener("player_state_changed", (state) => {
+        if (!state) {
+          setActive(false);
+          return;
         }
-      } catch (error) {
-        console.error("Spotify init failed", error);
-      }
+
+        setPaused(state.paused);
+        setActive(true);
+      });
+
+      await playerInstance.connect();
     };
 
     return () => {
       if (playerInstance) {
-        playerInstance.removeListener("ready");
-        playerInstance.removeListener("not_ready");
-        playerInstance.removeListener("initialization_error");
-        playerInstance.removeListener("authentication_error");
-        playerInstance.removeListener("account_error");
         playerInstance.disconnect();
       }
-
       window.onSpotifyWebPlaybackSDKReady = null;
     };
   }, [
@@ -174,42 +137,78 @@ const useSpotifyPlayer = () => {
   ]);
 
   useEffect(() => {
-    if (!player) return;
+    if (!player || !deviceId || !sessionTrack?.uri) return;
 
-    const handleStateChange = (state) => {
-      if (!state) {
-        setActive(false);
-        return;
-      }
+    let cancelled = false;
 
-      setTrack(state.track_window.current_track);
-      setPaused(state.paused);
-      setActive(true);
+    const playTrack = async () => {
+      const token = await getToken();
+      if (!token || cancelled) return;
+
+      await fetch(
+        `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            uris: [sessionTrack.uri],
+          }),
+        }
+      );
     };
 
-    player.addListener("player_state_changed", handleStateChange);
-
-    const interval = setInterval(() => {
-      player.getCurrentState().then((state) => {
-        if (state?.duration) {
-          setPosition((state.position / state.duration) * 100);
-        } else {
-          setPosition(0);
-        }
-      });
-    }, 1000);
+    playTrack();
 
     return () => {
-      clearInterval(interval);
-      player.removeListener("player_state_changed", handleStateChange);
+      cancelled = true;
     };
+  }, [sessionTrack?.id, deviceId, player, getToken]);
+
+  useEffect(() => {
+    if (!player || !deviceId) return;
+
+    const syncPlayback = async () => {
+      const token = await getToken();
+      if (!token) return;
+
+      const endpoint = isPlaying ? "play" : "pause";
+
+      await fetch(
+        `https://api.spotify.com/v1/me/player/${endpoint}?device_id=${deviceId}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+    };
+
+    syncPlayback();
+  }, [isPlaying, deviceId, player, getToken]);
+
+  useEffect(() => {
+    if (!player) return;
+
+    const interval = setInterval(async () => {
+      const state = await player.getCurrentState();
+      if (state?.duration) {
+        setPosition((state.position / state.duration) * 100);
+      } else {
+        setPosition(0);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
   }, [player]);
 
   return {
     player,
     is_paused,
     is_active,
-    current_track,
     position,
     deviceId,
   };
