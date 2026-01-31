@@ -163,6 +163,7 @@ const getDashboardData = asyncHandler(async (req, res) => {
         code: "$session_code",
         name: "$session_name",
         status: "$session_status",
+        code: "$session_code",
         songs: { $ifNull: [{ $arrayElemAt: ["$queueStats.count", 0] }, 0] },
         listeners: { $size: "$participants" },
       },
