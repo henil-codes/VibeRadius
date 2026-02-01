@@ -1,8 +1,10 @@
 import { create } from "zustand";
 import { sessionService } from "../services/sessionService.js";
+import { act } from "react";
 
 const useSessionStore = create((set) => ({
   activeSessions: [],
+  activeSessionCode: null,
   pastSessions: [],
   isLoading: false,
   error: null,
@@ -50,6 +52,14 @@ const useSessionStore = create((set) => ({
     }
   },
 
+  setActiveSessionCode: (code) => {
+    try {
+      set({ activeSessionCode: code });
+    } catch (error) {
+      set({ error: "Failed to set active session code" });
+  }
+},
+
   /* Add a new active session */
   addActiveSession: (session) =>
     set((state) => ({
@@ -88,6 +98,7 @@ const useSessionStore = create((set) => ({
   reset: () =>
     set({
       activeSessions: [],
+      activeSessionCode: null,
       pastSessions: [],
       isLoading: false,
       error: null,
