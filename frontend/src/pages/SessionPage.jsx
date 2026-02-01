@@ -218,8 +218,6 @@ export default function SessionPage() {
     }
   };
 
-  
-
   return (
     <div className="min-h-screen bg-surface-bg text-text-primary relative overflow-x-hidden">
       <NavbarAdmin />
