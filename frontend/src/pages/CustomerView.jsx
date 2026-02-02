@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { 
-  FaSearch, FaMusic, FaChevronUp, FaChevronDown, FaFire, 
-  FaPlus, FaCheckCircle, FaTimes, FaCommentAlt, 
+import {
+  FaSearch, FaMusic, FaChevronUp, FaChevronDown, FaFire,
+  FaPlus, FaCheckCircle, FaTimes, FaCommentAlt,
   FaCircle, FaArrowLeft, FaListUl, FaHistory, FaBolt
 } from 'react-icons/fa';
 import QueueModal from '../modals/QueueModal.jsx';
@@ -11,6 +11,7 @@ export default function CustomerView() {
   const [activeDrawer, setActiveDrawer] = useState(null); // 'left', 'right'
   const [isSearching, setIsSearching] = useState(false); // Full screen search state
   const [requestSuccess, setRequestSuccess] = useState(false);
+  const [isQueueOpen, setIsQueueOpen] = useState(false);
 
   const { queue } = useLiveSessionStore();
 
@@ -21,7 +22,6 @@ export default function CustomerView() {
     setTimeout(() => setRequestSuccess(false), 2000);
   };
 
-  console.log("Rendering CustomerView with queue:", queue);
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-[#F5F5F7] font-sans pb-44 relative overflow-hidden">
       
@@ -55,6 +55,11 @@ export default function CustomerView() {
         </button>
       </header>
 
+      {/* Queue Container */}
+      {isQueueOpen && (
+        <QueueModal isOpen={isQueueOpen} onClose={() => setIsQueueOpen(false)} />
+      )}
+
       {/* 4. MAIN VIBE FEED */}
       <main className="px-6 mt-10 space-y-12 relative z-10">
         <section className="bg-[#111113] p-8 rounded-[3rem] border border-white/5 relative overflow-hidden">
@@ -67,20 +72,20 @@ export default function CustomerView() {
         </section>
 
         <div className="space-y-6">
-           <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-gray-500 px-2">Trending Now</h3>
-           <div className="space-y-3">
-              {queue.slice(0, 5).map(song => <SongCard key={song.id} song={song} onVote={handleVote} />)}
-           </div>
-           <button onClick={() => setActiveDrawer('left')} className="w-full py-5 rounded-[2.5rem] bg-[#111113] border border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-[#E07A3D]">
-             Full Queue ({queue.length})
-           </button>
+          <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-gray-500 px-2">Upcoming Tracks</h3>
+          <div className="space-y-3">
+            {queue.slice(0, 5).map(song => <SongCard key={song.id} song={song} onVote={handleVote} />)}
+          </div>
+          <button disabled onClick={() => setActiveDrawer('left')} className="w-full py-5 rounded-[2.5rem] bg-[#111113] border border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-[#E07A3D]">
+            Full Queue ({queue.length})
+          </button>
         </div>
       </main>
 
       {/* 5. SEARCH TRIGGER */}
       <div className="fixed bottom-10 left-0 right-0 px-8 z-[100]">
-        <button 
-          onClick={() => setIsSearching(true)}
+        <button
+          onClick={() => setIsQueueOpen(true)}
           className="w-full bg-[#E07A3D] py-6 rounded-[2.5rem] flex items-center justify-center gap-4 shadow-[0_25px_50px_rgba(224,122,61,0.35)] active:scale-95 transition-all"
         >
           <FaPlus className="text-white" />
@@ -91,7 +96,7 @@ export default function CustomerView() {
       {/* --- DRAWERS --- */}
       <Drawer side="left" isOpen={activeDrawer === 'left'} onClose={() => setActiveDrawer(null)} title="Full Queue">
         <div className="space-y-4 pb-24">
-          <button 
+          <button
             onClick={() => { setActiveDrawer(null); setIsSearching(true); }}
             className="w-full p-6 rounded-[2.5rem] border-2 border-dashed border-[#E07A3D]/20 flex items-center justify-center gap-3 text-[#E07A3D] mb-4"
           >
@@ -146,8 +151,8 @@ export default function CustomerView() {
                   <h4 className="font-bold text-white truncate text-base">Example Track {i}</h4>
                   <p className="text-[10px] text-gray-500 font-black uppercase">Artist Name</p>
                 </div>
-                <button 
-                  onClick={() => {setIsSearching(false); setRequestSuccess(true);}}
+                <button
+                  onClick={() => { setIsSearching(false); setRequestSuccess(true); }}
                   className="w-12 h-12 bg-[#E07A3D] rounded-2xl flex items-center justify-center shadow-lg active:scale-90"
                 >
                   <FaPlus className="text-white" />
@@ -168,15 +173,10 @@ function SongCard({ song, onVote }) {
   return (
     <div className={`p-6 rounded-[2.5rem] border flex items-center gap-5 transition-all ${song.isPlaying ? 'bg-[#1DB954]/10 border-[#1DB954]' : 'bg-[#111113] border-white/5'}`}>
       <div className="w-16 h-16 bg-[#1A1A1C] rounded-2xl flex items-center justify-center text-[#E07A3D] relative">
-        {song.albumArtUrl ? (
-          <img src={song.albumArtUrl} alt={song.name} className="w-full h-full object-cover rounded-2xl" />
+        {song.album?.images?.[0] ? (
+          <img src={song.album.images[0].url} alt={song.album.name} className='w-full h-full object-cover rounded-2xl' />
         ) : (
           <FaMusic size={24} />
-        )}
-        {song.isPlaying && (
-          <div className="absolute inset-0 bg-black/30 flex items-center justify-center rounded-2xl">
-            <FaCircle className="text-[#1DB954] animate-pulse" />
-          </div>
         )}
       </div>
       <div className="flex-1 min-w-0">
@@ -184,14 +184,14 @@ function SongCard({ song, onVote }) {
         <p className="text-[10px] text-gray-500 font-black uppercase">{song.artist}</p>
       </div>
       <div className="flex flex-col items-center gap-2">
-        <button 
+        <button
           onClick={() => onVote(song.id, 1)}
           className="p-2 bg-[#1A1A1C] rounded-full text-gray-400 hover:text-white active:scale-90 transition"
         >
           <FaChevronUp />
         </button>
         <span className="text-sm font-black text-white">{song.votes}</span>
-        <button 
+        <button
           onClick={() => onVote(song.id, -1)}
           className="p-2 bg-[#1A1A1C] rounded-full text-gray-400 hover:text-white active:scale-90 transition"
         >
