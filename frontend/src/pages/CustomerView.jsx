@@ -1,24 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from 'react';
 import {
-  FaSearch,
-  FaMusic,
-  FaChevronUp,
-  FaChevronDown,
-  FaFire,
-  FaPlus,
-  FaCheckCircle,
-  FaTimes,
-  FaCommentAlt,
-  FaCircle,
-  FaArrowLeft,
-  FaListUl,
-  FaHistory,
-  FaBolt,
-} from "react-icons/fa";
+  FaSearch, FaMusic, FaChevronUp, FaChevronDown, FaFire,
+  FaPlus, FaCheckCircle, FaTimes, FaCommentAlt,
+  FaCircle, FaArrowLeft, FaListUl, FaHistory, FaBolt
+} from 'react-icons/fa';
+import QueueModal from '../modals/QueueModal.jsx';
+import useLiveSessionStore from '../store/liveSessionStore.js';
 import { useParams } from "react-router-dom";
 import useAuthStore from "../store/authStore";
-import useLiveSessionStore from "../store/liveSessionStore";
 import { useQueueActions, useSessionSocket } from "../socket/session.socket";
+
 
 export default function CustomerView() {
   const [activeDrawer, setActiveDrawer] = useState(null);
@@ -102,7 +93,6 @@ export default function CustomerView() {
     }
   };
 
-  console.log("Rendering CustomerView with queue:", queue);
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-[#F5F5F7] font-sans pb-44 relative overflow-hidden">
       {/* 1. BRAND ACCENT BAR */}
@@ -314,41 +304,22 @@ export default function CustomerView() {
           </div>
 
           <div className="flex-1 overflow-y-auto no-scrollbar space-y-4 pb-10">
-            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">
-              {searchQuery ? "Search Results" : "Start typing to search"}
-            </p>
-            {searchResults.length > 0 ? (
-              searchResults.map((song, i) => (
-                <div
-                  key={song.id || i}
-                  className="flex items-center gap-5 p-5 bg-[#111113] rounded-[2rem] border border-white/5"
-                >
-                  <div className="w-14 h-14 bg-[#1A1A1C] rounded-2xl flex items-center justify-center text-[#E07A3D]">
-                    <FaMusic />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-white truncate text-base">
-                      {song.name || song.title}
-                    </h4>
-                    <p className="text-[10px] text-gray-500 font-black uppercase">
-                      {song.artists?.map((a) => a.name).join(", ") ||
-                        song.artist}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => handleAddSong(song)}
-                    className="w-12 h-12 bg-[#E07A3D] rounded-2xl flex items-center justify-center shadow-lg active:scale-90"
-                  >
-                    <FaPlus className="text-white" />
-                  </button>
+            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Quick Results</p>
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} className="flex items-center gap-5 p-5 bg-[#111113] rounded-[2rem] border border-white/5">
+                <div className="w-14 h-14 bg-[#1A1A1C] rounded-2xl flex items-center justify-center text-[#E07A3D]"><FaMusic /></div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-white truncate text-base">Example Track {i}</h4>
+                  <p className="text-[10px] text-gray-500 font-black uppercase">Artist Name</p>
                 </div>
-              ))
-            ) : searchQuery ? (
-              <div className="text-center py-12">
-                <FaSearch className="mx-auto text-gray-600 mb-3" size={32} />
-                <p className="text-gray-500">No results found</p>
+                <button
+                  onClick={() => { setIsSearching(false); setRequestSuccess(true); }}
+                  className="w-12 h-12 bg-[#E07A3D] rounded-2xl flex items-center justify-center shadow-lg active:scale-90"
+                >
+                  <FaPlus className="text-white" />
+                </button>
               </div>
-            ) : null}
+            ))}
           </div>
         </div>
       </div>
@@ -367,15 +338,10 @@ function SongCard({ song, onVote }) {
   return (
     <div className={`p-6 rounded-[2.5rem] border flex items-center gap-5 transition-all ${song.isPlaying ? 'bg-[#1DB954]/10 border-[#1DB954]' : 'bg-[#111113] border-white/5'}`}>
       <div className="w-16 h-16 bg-[#1A1A1C] rounded-2xl flex items-center justify-center text-[#E07A3D] relative">
-        {song.albumArtUrl ? (
-          <img src={song.albumArtUrl} alt={song.name} className="w-full h-full object-cover rounded-2xl" />
+        {song.album?.images?.[0] ? (
+          <img src={song.album.images[0].url} alt={song.album.name} className='w-full h-full object-cover rounded-2xl' />
         ) : (
           <FaMusic size={24} />
-        )}
-        {song.isPlaying && (
-          <div className="absolute inset-0 bg-black/30 flex items-center justify-center rounded-2xl">
-            <FaCircle className="text-[#1DB954] animate-pulse" />
-          </div>
         )}
       </div>
       <div className="flex-1 min-w-0">
@@ -383,14 +349,14 @@ function SongCard({ song, onVote }) {
         <p className="text-[10px] text-gray-500 font-black uppercase">{song.artist}</p>
       </div>
       <div className="flex flex-col items-center gap-2">
-        <button 
+        <button
           onClick={() => onVote(song.id, 1)}
           className="p-2 bg-[#1A1A1C] rounded-full text-gray-400 hover:text-white active:scale-90 transition"
         >
           <FaChevronUp />
         </button>
         <span className="text-sm font-black text-white">{song.votes}</span>
-        <button 
+        <button
           onClick={() => onVote(song.id, -1)}
           className="p-2 bg-[#1A1A1C] rounded-full text-gray-400 hover:text-white active:scale-90 transition"
         >
