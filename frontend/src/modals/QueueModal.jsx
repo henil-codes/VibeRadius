@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { searchTrack } from "../services/SpotifyService.js"
-import { FaListUl, FaTimes, FaSearch, FaChevronUp, FaChevronDown, FaMusic, FaTrashAlt } from "react-icons/fa";
+import { FaListUl, FaTimes, FaSearch, FaChevronUp, FaChevronDown, FaMusic, FaTrashAlt, FaPlayCircle, FaPlus } from "react-icons/fa";
+import useLiveSessionStore from "../store/liveSessionStore.js";
 
-
-const QueueModal = ({ isOpen, onClose, queue }) => {
+const QueueModal = ({ isOpen, onClose }) => {
     if (!isOpen) return null;
 
     /* Spotify Track Search */
@@ -36,6 +36,19 @@ const QueueModal = ({ isOpen, onClose, queue }) => {
         if (e.key === "Enter") searchTracks();
     };
 
+    /* Add Track to Queue */
+    const { setQueue } = useLiveSessionStore();
+
+    /* Store accepts an object which looks for queue; here we'll set it */
+    const addToQueue = async (track) => {
+        try {
+            await setQueue(track);
+        } catch (err) {
+            setError("Failed to add track to queue. Please try again.");
+            console.error("Error adding track to queue:", err);
+        }
+    };
+
     return (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
             <div
@@ -48,7 +61,7 @@ const QueueModal = ({ isOpen, onClose, queue }) => {
                         <div className="p-2 bg-primary rounded-xl text-white shadow-lg shadow-primary/20">
                             <FaListUl size={14} />
                         </div>
-                        Session Queue
+                        Add to Queue
                     </h2>
                     <button
                         onClick={onClose}
@@ -73,6 +86,59 @@ const QueueModal = ({ isOpen, onClose, queue }) => {
                 </div>
 
                 <div className="overflow-y-auto p-4 flex-1 custom-scrollbar">
+                    {tracks.length > 0 ? (
+                        tracks.map((track, index) => (
+                            <div
+                                key={track.id}
+                                style={{ animationDelay: `${index * 50}ms` }}
+                                className="flex items-center gap-4 p-4 hover:bg-surface-alt rounded-2xl transition-all mb-2 group border border-transparent hover:border-primary-subtle"
+                            >
+                                <div className="w-12 h-12 bg-primary-subtle text-primary rounded-xl flex items-center justify-center shadow-inner font-bold" >
+                                    <div className="relative w-12 h-12 flex-shrink-0" >
+                                        {track.album?.images?.[0] ? (
+                                            <img src={track.album.images[0].url} alt={track.album.name}
+                                                className="w-full h-full object-cover rounded-xl" />
+                                        ) : (
+                                            <FaMusic size={24}
+                                            />
+                                        )}
+                                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-xl transition-opacity cursor-pointer" >
+                                            <FaPlayCircle size={32} className="text-white" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col min-w-0" >
+                                    <span className="font-bold text-[#5C4033] truncate pr-4 group-hover:text-[#E07A3D] transition-colors" >{track.name}</span>
+                                    <span className="text-[10px] text-[#5C4033]/50 font-black uppercase tracking-widest" >
+                                        {track.artists.map((a) => a.name).join(", ")}
+                                    </span>
+                                </div>
+
+                                <button
+                                    className="bg-white border border-[#5C4033]/5 hover:border-[#E07A3D] text-[#5C4033] hover:text-[#E07A3D] p-2.5 rounded-xl transition-all shadow-sm active:scale-90 ml-auto"
+                                    onClick={() => addToQueue(track)}
+                                >
+                                    <FaPlus size={14} />
+                                </button>
+
+                            </div>
+                        ))
+                    ) : hasSearched && !loading ? (
+                        <div
+                            className="p-6 text-center text-text-muted italic"
+                        >
+                            <FaMusic size={24} /> <br />
+                            No results found for "{query}".
+                        </div>
+                    ) : (
+                        <div className="p-6 text-center text-text-muted italic">
+                            Search for songs to add to the queue.
+                        </div>
+                    )}
+                </div>
+
+                {/* Will use it for Queue */}
+                {/* <div className="overflow-y-auto p-4 flex-1 custom-scrollbar">
                     {queue.map((song, i) => (
                         <div
                             key={song.id || i}
@@ -112,7 +178,7 @@ const QueueModal = ({ isOpen, onClose, queue }) => {
                             </div>
                         </div>
                     ))}
-                </div>
+                </div> */}
             </div>
         </div>
     );
