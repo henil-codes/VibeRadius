@@ -210,7 +210,6 @@ export default function SessionPage() {
 
   const { refreshSessionData } = useQueueActions();
 
-  // Initialize session code from URL on mount
   useEffect(() => {
     if (urlSessionCode && urlSessionCode !== sessionCode) {
       console.log(`📍 Setting session code from URL: ${urlSessionCode}`);
@@ -218,18 +217,15 @@ export default function SessionPage() {
     } else if (!urlSessionCode) {
       console.warn("⚠️ No session code in URL params");
     }
-  }, [urlSessionCode]); // Only run when URL param changes
+  }, [urlSessionCode]);
 
   // Check authentication
   useEffect(() => {
     if (!isAuthenticated) {
       console.warn("⚠️ User not authenticated");
-      // Uncomment if you want to enforce auth:
-      // navigate("/login");
     }
   }, [isAuthenticated, navigate]);
 
-  // Setup socket connection with event handlers - only when we have a session code
   const socketEventHandlers = React.useMemo(
     () => ({
       track_changed: (data) => {
@@ -271,7 +267,6 @@ export default function SessionPage() {
     );
   };
 
-  // Determine which track to display (prefer store data, fallback to Spotify)
   const displayTrack = currentTrack;
   const displayQueue = queue.length > 0 ? queue : [];
 
