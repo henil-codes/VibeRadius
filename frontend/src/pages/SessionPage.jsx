@@ -127,6 +127,7 @@ export default function SessionPage() {
     upNext,
     participants,
     sessionStatus,
+    removeTrackFromQueue,
     isPlaying,
     setSessionCode,
   } = useLiveSessionStore();
@@ -245,7 +246,7 @@ export default function SessionPage() {
       <QueueModal
         isOpen={isQueueOpen}
         onClose={() => setIsQueueOpen(false)}
-        queue={displayQueue}
+      // queue={displayQueue}
       />
 
       <main className="max-w-7xl mx-auto p-6 lg:p-10 pt-24 lg:pt-32">
@@ -457,7 +458,15 @@ export default function SessionPage() {
                     </div>
 
                     <div className="w-16 h-16 bg-primary-subtle text-primary rounded-[1.5rem] flex items-center justify-center shadow-inner group-hover:bg-primary group-hover:text-white transition-all duration-500">
-                      <FaMusic size={24} />
+                      {song.album?.images?.[0] ? (
+                        <img
+                          src={song.album.images[0].url}
+                          alt={song.album.name}
+                          className="w-full h-full object-cover rounded-[1.5rem]"
+                        />
+                      ) : (
+                        <FaMusic size={24} />
+                      )}
                     </div>
 
                     <div className="flex-1 min-w-0">
@@ -476,14 +485,12 @@ export default function SessionPage() {
                       >
                         <FaForward size={14} />
                       </button>
-                      <div className="text-right flex flex-col items-end">
-                        <span className="text-[9px] font-black text-text-muted uppercase tracking-widest mb-1">
-                          From Table
-                        </span>
-                        <p className="text-xs font-black text-primary uppercase bg-primary-subtle px-3 py-1.5 rounded-lg border border-primary/10">
-                          {song.table || song.requestedBy || "—"}
-                        </p>
-                      </div>
+                      <button
+                        onClick={() => { addToast("Song Removed from Queue", "leave"); removeTrackFromQueue(song.id); }}
+                        className="p-3 bg-surface-bg border border-primary-subtle rounded-xl text-text-muted hover:text-error hover:border-error opacity-0 group-hover:opacity-100 transition-all shadow-sm"
+                      >
+                        <FaTrashAlt size={14} />
+                      </button>
                     </div>
                   </div>
                 ))}
