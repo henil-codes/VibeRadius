@@ -4,19 +4,15 @@ import {
   FaPlus, FaCheckCircle, FaTimes, FaCommentAlt, 
   FaCircle, FaArrowLeft, FaListUl, FaHistory, FaBolt
 } from 'react-icons/fa';
+import QueueModal from '../modals/QueueModal.jsx';
+import useLiveSessionStore from '../store/liveSessionStore.js';
 
 export default function CustomerView() {
   const [activeDrawer, setActiveDrawer] = useState(null); // 'left', 'right'
   const [isSearching, setIsSearching] = useState(false); // Full screen search state
   const [requestSuccess, setRequestSuccess] = useState(false);
 
-  const [queue, setQueue] = useState([
-    { id: 1, title: "Espresso", artist: "Sabrina Carpenter", votes: 42, table: "T-04", isMine: true },
-    { id: 2, title: "Heat Waves", artist: "Glass Animals", votes: 24, table: "B-02", isMine: false },
-    { id: 3, title: "Starboy", artist: "The Weeknd", votes: 18, table: "T-12", isMine: true },
-    { id: 4, title: "Levitating", artist: "Dua Lipa", votes: 12, table: "T-09", isMine: false },
-    { id: 5, title: "Cruel Summer", artist: "Taylor Swift", votes: 8, table: "B-01", isMine: false },
-  ]);
+  const { queue } = useLiveSessionStore();
 
   const handleVote = (id, delta) => {
     setQueue(prev => prev.map(s => s.id === id ? { ...s, votes: s.votes + delta } : s)
@@ -25,6 +21,7 @@ export default function CustomerView() {
     setTimeout(() => setRequestSuccess(false), 2000);
   };
 
+  console.log("Rendering CustomerView with queue:", queue);
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-[#F5F5F7] font-sans pb-44 relative overflow-hidden">
       
@@ -101,7 +98,18 @@ export default function CustomerView() {
             <FaSearch size={12} />
             <span className="text-[10px] font-black uppercase tracking-widest">Search & Add More</span>
           </button>
-          {queue.map(song => <SongCard key={song.id} song={song} onVote={handleVote} />)}
+          {queue.length === 0 ? (
+            <p className="text-center text-gray-500 text-sm italic mt-20">The queue is currently empty. Be the first to add a song!</p>
+          ) : (
+            queue.map((song, index) => (
+              <div
+                key={song.id}
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <SongCard song={song} onVote={handleVote} />
+              </div>
+            ))
+          )}
         </div>
       </Drawer>
 
@@ -158,15 +166,37 @@ export default function CustomerView() {
 // --- SHARED COMPONENTS (KEEP PREVIOUS SONG CARD AND DRAWER LOGIC) ---
 function SongCard({ song, onVote }) {
   return (
-    <div className={`p-6 rounded-[2.5rem] border flex items-center gap-5 transition-all ${song.isMine ? 'bg-[#E07A3D]/10 border-[#E07A3D]/20' : 'bg-[#111113] border-white/5'}`}>
-      <div className="flex-1 min-w-0">
-        <h4 className="font-bold text-white truncate text-lg tracking-tight">{song.title}</h4>
-        <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">{song.artist}</p>
+    <div className={`p-6 rounded-[2.5rem] border flex items-center gap-5 transition-all ${song.isPlaying ? 'bg-[#1DB954]/10 border-[#1DB954]' : 'bg-[#111113] border-white/5'}`}>
+      <div className="w-16 h-16 bg-[#1A1A1C] rounded-2xl flex items-center justify-center text-[#E07A3D] relative">
+        {song.albumArtUrl ? (
+          <img src={song.albumArtUrl} alt={song.name} className="w-full h-full object-cover rounded-2xl" />
+        ) : (
+          <FaMusic size={24} />
+        )}
+        {song.isPlaying && (
+          <div className="absolute inset-0 bg-black/30 flex items-center justify-center rounded-2xl">
+            <FaCircle className="text-[#1DB954] animate-pulse" />
+          </div>
+        )}
       </div>
-      <div className="flex items-center gap-1 bg-[#0A0A0B]/60 p-1.5 rounded-[1.8rem] border border-white/5">
-        <button onClick={() => onVote(song.id, -1)} className="p-3 text-gray-500 hover:text-red-500 transition-all"><FaChevronDown size={14}/></button>
-        <span className="text-sm font-black min-w-[30px] text-center text-white">{song.votes}</span>
-        <button onClick={() => onVote(song.id, 1)} className="p-3 text-gray-500 hover:text-[#1DB954] transition-all"><FaChevronUp size={14}/></button>
+      <div className="flex-1 min-w-0">
+        <h4 className="font-bold text-white truncate text-base">{song.name}</h4>
+        <p className="text-[10px] text-gray-500 font-black uppercase">{song.artist}</p>
+      </div>
+      <div className="flex flex-col items-center gap-2">
+        <button 
+          onClick={() => onVote(song.id, 1)}
+          className="p-2 bg-[#1A1A1C] rounded-full text-gray-400 hover:text-white active:scale-90 transition"
+        >
+          <FaChevronUp />
+        </button>
+        <span className="text-sm font-black text-white">{song.votes}</span>
+        <button 
+          onClick={() => onVote(song.id, -1)}
+          className="p-2 bg-[#1A1A1C] rounded-full text-gray-400 hover:text-white active:scale-90 transition"
+        >
+          <FaChevronDown />
+        </button>
       </div>
     </div>
   );
