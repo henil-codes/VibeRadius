@@ -77,7 +77,7 @@ const QueueModal = ({ isOpen, onClose }) => {
                         <input
                             type="text"
                             placeholder="Search and add a new song instantly..."
-                            className="w-full pl-11 pr-4 py-4 rounded-2xl bg-surface-bg border border-primary-subtle focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium"
+                            className="w-full pl-10 pr-4 py-3 rounded-2xl bg-surface-alt border border-primary-subtle focus:border-primary outline-none text-text-primary placeholder:text-text-muted transition-all"
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             onKeyPress={handleKeyPress}
@@ -132,7 +132,7 @@ const QueueModal = ({ isOpen, onClose }) => {
                         </div>
                     ) : (
                         <div className="p-6 text-center text-text-muted italic">
-                            Search for songs to add to the queue.
+                            {loading ? "Searching..." : "Search for songs to add to the queue."}
                         </div>
                     )}
                 </div>
