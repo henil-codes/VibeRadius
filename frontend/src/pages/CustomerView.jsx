@@ -1,13 +1,3 @@
-<<<<<<< HEAD
-import React, { useState } from 'react';
-import {
-  FaSearch, FaMusic, FaChevronUp, FaChevronDown, FaFire,
-  FaPlus, FaCheckCircle, FaTimes, FaCommentAlt,
-  FaCircle, FaArrowLeft, FaListUl, FaHistory, FaBolt
-} from 'react-icons/fa';
-import QueueModal from '../modals/QueueModal.jsx';
-import useLiveSessionStore from '../store/liveSessionStore.js';
-=======
 import React, { useEffect, useState } from "react";
 import {
   FaSearch,
@@ -29,23 +19,18 @@ import { useParams } from "react-router-dom";
 import useAuthStore from "../store/authStore";
 import useLiveSessionStore from "../store/liveSessionStore";
 import { useQueueActions, useSessionSocket } from "../socket/session.socket";
->>>>>>> 8ec0ae8 (now host and guests can now join session usgn session code)
 
 export default function CustomerView() {
   const [activeDrawer, setActiveDrawer] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
   const [requestSuccess, setRequestSuccess] = useState(false);
-<<<<<<< HEAD
   const [isQueueOpen, setIsQueueOpen] = useState(false);
 
-  const { queue } = useLiveSessionStore();
-=======
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
 
   const { sessionCode: urlSessionCode } = useParams();
   const { isAuthenticated } = useAuthStore();
->>>>>>> 8ec0ae8 (now host and guests can now join session usgn session code)
 
   const {
     currentSession,
@@ -117,46 +102,7 @@ export default function CustomerView() {
     }
   };
 
-  const handleSearch = async (query) => {
-    if (!query.trim()) {
-      setSearchResults([]);
-      return;
-    }
-
-    try {
-      setSearchResults([
-        { id: 1, name: "Example Track 1", artists: [{ name: "Artist Name" }] },
-        { id: 2, name: "Example Track 2", artists: [{ name: "Artist Name" }] },
-        { id: 3, name: "Example Track 3", artists: [{ name: "Artist Name" }] },
-      ]);
-    } catch (error) {
-      console.error("Search failed:", error);
-    }
-  };
-
-  const handleAddSong = async (song) => {
-    try {
-      setIsSearching(false);
-      setRequestSuccess(true);
-      setTimeout(() => setRequestSuccess(false), 2000);
-
-      // Refresh queue data
-      if (refreshSessionData) {
-        refreshSessionData();
-      }
-    } catch (error) {
-      console.error("Failed to add song:", error);
-    }
-  };
-
-  const displayTrack = currentTrack || {
-    name: "Waiting for playback...",
-    artists: [{ name: "—" }],
-  };
-
-  const displayQueue = queue.length > 0 ? queue : [];
-  const displaySession = currentSession || { name: "Loading...", venue: "—" };
-
+  console.log("Rendering CustomerView with queue:", queue);
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-[#F5F5F7] font-sans pb-44 relative overflow-hidden">
       {/* 1. BRAND ACCENT BAR */}
@@ -419,32 +365,36 @@ function SongCard({ song, onVote }) {
   const isMine = song.isMine || false;
 
   return (
-    <div
-      className={`p-6 rounded-[2.5rem] border flex items-center gap-5 transition-all ${isMine ? "bg-[#E07A3D]/10 border-[#E07A3D]/20" : "bg-[#111113] border-white/5"}`}
-    >
-      <div className="flex-1 min-w-0">
-        <h4 className="font-bold text-white truncate text-lg tracking-tight">
-          {song.title || song.name}
-        </h4>
-        <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">
-          {song.artist || song.artists?.map((a) => a.name).join(", ")}
-        </p>
+    <div className={`p-6 rounded-[2.5rem] border flex items-center gap-5 transition-all ${song.isPlaying ? 'bg-[#1DB954]/10 border-[#1DB954]' : 'bg-[#111113] border-white/5'}`}>
+      <div className="w-16 h-16 bg-[#1A1A1C] rounded-2xl flex items-center justify-center text-[#E07A3D] relative">
+        {song.albumArtUrl ? (
+          <img src={song.albumArtUrl} alt={song.name} className="w-full h-full object-cover rounded-2xl" />
+        ) : (
+          <FaMusic size={24} />
+        )}
+        {song.isPlaying && (
+          <div className="absolute inset-0 bg-black/30 flex items-center justify-center rounded-2xl">
+            <FaCircle className="text-[#1DB954] animate-pulse" />
+          </div>
+        )}
       </div>
-      <div className="flex items-center gap-1 bg-[#0A0A0B]/60 p-1.5 rounded-[1.8rem] border border-white/5">
-        <button
-          onClick={() => onVote(song.id, -1)}
-          className="p-3 text-gray-500 hover:text-red-500 transition-all"
-        >
-          <FaChevronDown size={14} />
-        </button>
-        <span className="text-sm font-black min-w-[30px] text-center text-white">
-          {song.votes || 0}
-        </span>
-        <button
+      <div className="flex-1 min-w-0">
+        <h4 className="font-bold text-white truncate text-base">{song.name}</h4>
+        <p className="text-[10px] text-gray-500 font-black uppercase">{song.artist}</p>
+      </div>
+      <div className="flex flex-col items-center gap-2">
+        <button 
           onClick={() => onVote(song.id, 1)}
-          className="p-3 text-gray-500 hover:text-[#1DB954] transition-all"
+          className="p-2 bg-[#1A1A1C] rounded-full text-gray-400 hover:text-white active:scale-90 transition"
         >
-          <FaChevronUp size={14} />
+          <FaChevronUp />
+        </button>
+        <span className="text-sm font-black text-white">{song.votes}</span>
+        <button 
+          onClick={() => onVote(song.id, -1)}
+          className="p-2 bg-[#1A1A1C] rounded-full text-gray-400 hover:text-white active:scale-90 transition"
+        >
+          <FaChevronDown />
         </button>
       </div>
     </div>
