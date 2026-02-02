@@ -1,20 +1,5 @@
 import React, { useEffect, useState } from "react";
 import {
-  FaSearch,
-  FaMusic,
-  FaChevronUp,
-  FaChevronDown,
-  FaFire,
-  FaPlus,
-  FaCheckCircle,
-  FaTimes,
-  FaCommentAlt,
-  FaCircle,
-  FaArrowLeft,
-  FaListUl,
-  FaHistory,
-  FaBolt,
-
   FaSearch, FaMusic, FaChevronUp, FaChevronDown, FaFire,
   FaPlus, FaCheckCircle, FaTimes, FaCommentAlt,
   FaCircle, FaArrowLeft, FaListUl, FaHistory, FaBolt
@@ -24,7 +9,6 @@ import useAuthStore from "../store/authStore";
 import useLiveSessionStore from "../store/liveSessionStore";
 import { useQueueActions, useSessionSocket } from "../socket/session.socket";
 import QueueModal from '../modals/QueueModal.jsx';
-import useLiveSessionStore from '../store/liveSessionStore.js';
 
 export default function CustomerView() {
   const [activeDrawer, setActiveDrawer] = useState(null);
