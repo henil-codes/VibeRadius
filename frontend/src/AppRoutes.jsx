@@ -9,7 +9,7 @@ import SessionPage from "./pages/SessionPage.jsx";
 import { HostProfile } from "./pages/admin/HostProfile.jsx";
 import useAuthStore from "./store/authStore.js";
 import CustomerView from "./pages/CustomerView.jsx";
-import SpotifyPlayer from "./pages/SpotifyPlayer.jsx"
+import SpotifyPlayer from "./pages/SpotifyPlayer.jsx";
 import TestSessionPage from "./pages/test_session.jsx";
 import QRCodeForSession from "./components/QRCodeForSession.jsx";
 
@@ -46,7 +46,7 @@ export default function AppRoutes() {
       <Route
         path="/session"
         element={
-          <ProtectedRoute allowGuest={true}>
+          <ProtectedRoute>
             <SessionPage />
           </ProtectedRoute>
         }
@@ -55,7 +55,7 @@ export default function AppRoutes() {
       <Route
         path="/session/:sessionCode"
         element={
-          <ProtectedRoute allowGuest={true}>
+          <ProtectedRoute>
             <SessionPage />
           </ProtectedRoute>
         }
