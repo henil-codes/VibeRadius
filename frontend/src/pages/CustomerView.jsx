@@ -14,11 +14,17 @@ import {
   FaListUl,
   FaHistory,
   FaBolt,
+
+  FaSearch, FaMusic, FaChevronUp, FaChevronDown, FaFire,
+  FaPlus, FaCheckCircle, FaTimes, FaCommentAlt,
+  FaCircle, FaArrowLeft, FaListUl, FaHistory, FaBolt
 } from "react-icons/fa";
 import { useParams } from "react-router-dom";
 import useAuthStore from "../store/authStore";
 import useLiveSessionStore from "../store/liveSessionStore";
 import { useQueueActions, useSessionSocket } from "../socket/session.socket";
+import QueueModal from '../modals/QueueModal.jsx';
+import useLiveSessionStore from '../store/liveSessionStore.js';
 
 export default function CustomerView() {
   const [activeDrawer, setActiveDrawer] = useState(null);
@@ -140,6 +146,7 @@ export default function CustomerView() {
   const displayQueue = queue.length > 0 ? queue : [];
   const displaySession = currentSession || { name: "Loading...", venue: "—" };
 
+  console.log("Rendering CustomerView with queue:", queue);
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-[#F5F5F7] font-sans pb-44 relative overflow-hidden">
       {/* 1. BRAND ACCENT BAR */}
@@ -174,11 +181,10 @@ export default function CustomerView() {
           <span className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 flex items-center justify-center gap-2">
             {displaySession.venue} •{" "}
             <span
-              className={`flex items-center gap-1 ${
-                isConnected && sessionStatus === "active"
+              className={`flex items-center gap-1 ${isConnected && sessionStatus === "active"
                   ? "text-[#1DB954]"
                   : "text-gray-500"
-              }`}
+                }`}
             >
               <FaCircle className="text-[6px]" />
               {isConnected && sessionStatus === "active" ? "Live" : "Offline"}
@@ -287,58 +293,61 @@ export default function CustomerView() {
               Search & Add More
             </span>
           </button>
-          {displayQueue.length > 0 ? (
-            displayQueue.map((song) => (
-              <SongCard key={song.id} song={song} onVote={handleVote} />
-            ))
+          {queue.length === 0 ? (
+            <p className="text-center text-gray-500 text-sm italic mt-20">The queue is currently empty. Be the first to add a song!</p>
           ) : (
-            <div className="text-center py-12">
-              <FaMusic className="mx-auto text-gray-600 mb-3" size={40} />
-              <p className="text-gray-500 font-bold">Queue is empty</p>
-            </div>
-          )}
-        </div>
-      </Drawer>
-
-      <Drawer
-        side="right"
-        isOpen={activeDrawer === "right"}
-        onClose={() => setActiveDrawer(null)}
-        title="Activity"
-      >
-        <div className="space-y-3 pb-24">
-          <div className="mb-6">
-            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-4">
-              Live Participants ({participants.length})
-            </p>
-          </div>
-          {participants.length > 0 ? (
-            participants.map((participant, idx) => (
+            queue.map((song, index) => (
               <div
-                key={participant.id || idx}
-                className="p-4 rounded-2xl bg-[#111113] border border-white/5 flex items-start gap-4"
+                key={song.id}
+                style={{ animationDelay: `${index * 50}ms` }}
               >
-                <div className="w-2.5 h-2.5 rounded-full mt-1.5 bg-[#1DB954] animate-pulse" />
-                <div>
-                  <p className="text-sm font-bold text-white leading-tight">
-                    {participant.name || `Listener ${idx + 1}`}
-                  </p>
-                  <p className="text-[10px] text-gray-500 font-black mt-1 uppercase tracking-tighter">
-                    Active
-                  </p>
-                </div>
+                <SongCard song={song} onVote={handleVote} />
               </div>
             ))
-          ) : (
-            <div className="text-center py-12">
-              <FaCommentAlt className="mx-auto text-gray-600 mb-3" size={32} />
-              <p className="text-gray-500 text-sm">No active participants</p>
-            </div>
-          )}
-        </div>
-      </Drawer>
+  )
+  }
+        </div >
+      </Drawer >
 
-      {/* --- FULL SCREEN SEARCH OVERLAY --- */}
+    <Drawer
+      side="right"
+      isOpen={activeDrawer === "right"}
+      onClose={() => setActiveDrawer(null)}
+      title="Activity"
+    >
+      <div className="space-y-3 pb-24">
+        <div className="mb-6">
+          <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-4">
+            Live Participants ({participants.length})
+          </p>
+        </div>
+        {participants.length > 0 ? (
+          participants.map((participant, idx) => (
+            <div
+              key={participant.id || idx}
+              className="p-4 rounded-2xl bg-[#111113] border border-white/5 flex items-start gap-4"
+            >
+              <div className="w-2.5 h-2.5 rounded-full mt-1.5 bg-[#1DB954] animate-pulse" />
+              <div>
+                <p className="text-sm font-bold text-white leading-tight">
+                  {participant.name || `Listener ${idx + 1}`}
+                </p>
+                <p className="text-[10px] text-gray-500 font-black mt-1 uppercase tracking-tighter">
+                  Active
+                </p>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-12">
+            <FaCommentAlt className="mx-auto text-gray-600 mb-3" size={32} />
+            <p className="text-gray-500 text-sm">No active participants</p>
+          </div>
+        )}
+      </div>
+    </Drawer>
+
+  {/* --- FULL SCREEN SEARCH OVERLAY --- */ }
       <div
         className={`fixed inset-0 bg-[#0A0A0B] z-[300] transition-all duration-500 ease-[cubic-bezier(0.32,0,0.07,1)] ${isSearching ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"}`}
       >
@@ -415,7 +424,7 @@ export default function CustomerView() {
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#0A0A0B] to-transparent pointer-events-none z-40" />
-    </div>
+    </div >
   );
 }
 
@@ -426,70 +435,74 @@ function SongCard({ song, onVote }) {
   const isMine = song.isMine || false;
 
   return (
-    <div
-      className={`p-6 rounded-[2.5rem] border flex items-center gap-5 transition-all ${isMine ? "bg-[#E07A3D]/10 border-[#E07A3D]/20" : "bg-[#111113] border-white/5"}`}
-    >
-      <div className="flex-1 min-w-0">
-        <h4 className="font-bold text-white truncate text-lg tracking-tight">
-          {song.title || song.name}
-        </h4>
-        <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">
-          {song.artist || song.artists?.map((a) => a.name).join(", ")}
-        </p>
-      </div>
-      <div className="flex items-center gap-1 bg-[#0A0A0B]/60 p-1.5 rounded-[1.8rem] border border-white/5">
-        <button
-          onClick={() => onVote(song.id, -1)}
-          className="p-3 text-gray-500 hover:text-red-500 transition-all"
-        >
-          <FaChevronDown size={14} />
-        </button>
-        <span className="text-sm font-black min-w-[30px] text-center text-white">
-          {song.votes || 0}
-        </span>
-        <button
-          onClick={() => onVote(song.id, 1)}
-          className="p-3 text-gray-500 hover:text-[#1DB954] transition-all"
-        >
-          <FaChevronUp size={14} />
-        </button>
-      </div>
-    </div>
-  );
+    <div className={`p-6 rounded-[2.5rem] border flex items-center gap-5 transition-all ${song.isPlaying ? 'bg-[#1DB954]/10 border-[#1DB954]' : 'bg-[#111113] border-white/5'}`}>
+            <div className="w-16 h-16 bg-[#1A1A1C] rounded-2xl flex items-center justify-center text-[#E07A3D] relative">
+              {song.albumArtUrl ? (
+                <img src={song.albumArtUrl} alt={song.name} className="w-full h-full object-cover rounded-2xl" />
+              ) : (
+                <FaMusic size={24} />
+              )}
+              {song.isPlaying && (
+                <div className="absolute inset-0 bg-black/30 flex items-center justify-center rounded-2xl">
+                  <FaCircle className="text-[#1DB954] animate-pulse" />
+                </div>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="font-bold text-white truncate text-base">{song.name}</h4>
+              <p className="text-[10px] text-gray-500 font-black uppercase">{song.artist}</p>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <button
+                onClick={() => onVote(song.id, 1)}
+                className="p-2 bg-[#1A1A1C] rounded-full text-gray-400 hover:text-white active:scale-90 transition"
+              >
+                <FaChevronUp />
+              </button>
+              <span className="text-sm font-black text-white">{song.votes}</span>
+              <button
+                onClick={() => onVote(song.id, -1)}
+                className="p-2 bg-[#1A1A1C] rounded-full text-gray-400 hover:text-white active:scale-90 transition"
+              >
+                <FaChevronDown />
+              </button>
+            </div>
+          </div>
+          );
 }
 
-function Drawer({ side, isOpen, onClose, title, children }) {
+          function Drawer({side, isOpen, onClose, title, children}) {
   const transform =
-    side === "left"
-      ? isOpen
-        ? "translate-x-0"
-        : "-translate-x-full"
-      : isOpen
-        ? "translate-x-0"
-        : "translate-x-full";
-  const edge = side === "left" ? "left-0 border-r" : "right-0 border-l";
+          side === "left"
+          ? isOpen
+          ? "translate-x-0"
+          : "-translate-x-full"
+          : isOpen
+          ? "translate-x-0"
+          : "translate-x-full";
+          const edge = side === "left" ? "left-0 border-r" : "right-0 border-l";
 
-  return (
-    <>
-      <div
-        className={`fixed inset-0 bg-black/85 backdrop-blur-md z-[140] transition-opacity duration-500 ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
-        onClick={onClose}
-      />
-      <div
-        className={`fixed inset-y-0 bg-[#0D0D0F] z-[150] shadow-2xl transform transition-transform duration-500 ease-[cubic-bezier(0.32,0,0.07,1)] border-white/5 w-[88%] max-w-sm ${edge} ${transform}`}
-      >
-        <div className="p-8 h-full flex flex-col">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="text-xl font-black uppercase tracking-tighter text-[#E07A3D] italic">
-              {title}
-            </h3>
-            <button onClick={onClose} className="p-2 text-gray-500">
-              <FaTimes size={20} />
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto no-scrollbar">{children}</div>
-        </div>
-      </div>
-    </>
-  );
+          return (
+          <>
+            <div
+              className={`fixed inset-0 bg-black/85 backdrop-blur-md z-[140] transition-opacity duration-500 ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+              onClick={onClose}
+            />
+            <div
+              className={`fixed inset-y-0 bg-[#0D0D0F] z-[150] shadow-2xl transform transition-transform duration-500 ease-[cubic-bezier(0.32,0,0.07,1)] border-white/5 w-[88%] max-w-sm ${edge} ${transform}`}
+            >
+              <div className="p-8 h-full flex flex-col">
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-xl font-black uppercase tracking-tighter text-[#E07A3D] italic">
+                    {title}
+                  </h3>
+                  <button onClick={onClose} className="p-2 text-gray-500">
+                    <FaTimes size={20} />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto no-scrollbar">{children}</div>
+              </div>
+            </div>
+          </>
+          );
 }
